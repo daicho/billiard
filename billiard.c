@@ -1,21 +1,25 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
-
 #include <time.h>
-#include <sys/time.h>
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
 
 #include "billiard.h"
 
-#define FPS    60 // フレームレート
-#define ASPECT (16.0 / 9.0) // アスペクト比(幅/高さ)
+#define FPS      60           // フレームレート
+#define ASPECT   (16.0 / 9.0) // アスペクト比(幅/高さ)
+#define FRICTION 0.01         // 摩擦
+#define BALL_R   0.05         // ボールの半径
+
+struct ball cueBall;
+struct ball balls[BALL_NUM];
 
 int main(int argc, char *argv[]) {
     // 初期化
     glutInit(&argc, argv);
-    glutInitWindowSize(540, 720);
+    glutInitWindowSize(640, 360);
     glutCreateWindow("Mechanical Clock");
     glutInitDisplayMode(GLUT_RGBA);
     glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -41,13 +45,62 @@ int main(int argc, char *argv[]) {
     glutMotionFunc(Motion);
 
     // メインループ開始
+    init();
     glutMainLoop();
 
     return 0;
 }
 
+// 初期化
+void init(void) {
+    struct vector p1 = {0.5, 0}; // 1番玉の位置
+
+    initBall(&cueBall, 0, 0, 0, BALL_R);
+    cueBall.v.x = 0.01;
+
+    initBall(&balls[0], 1, p1.x, p1.y, BALL_R);
+    initBall(&balls[1], 2, p1.x + BALL_R * 2 * sqrt(3), p1.y - BALL_R * 2, BALL_R);
+    initBall(&balls[2], 3, p1.x + BALL_R * 4 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[3], 4, p1.x + BALL_R * 2 * sqrt(3), p1.y + BALL_R * 2, BALL_R);
+    initBall(&balls[4], 5, p1.x + BALL_R * sqrt(3), p1.y - BALL_R, BALL_R);
+    initBall(&balls[5], 6, p1.x + BALL_R * sqrt(3), p1.y + BALL_R, BALL_R);
+    initBall(&balls[6], 7, p1.x + BALL_R * 3 * sqrt(3), p1.y - BALL_R, BALL_R);
+    initBall(&balls[7], 8, p1.x + BALL_R * 3 * sqrt(3), p1.y + BALL_R, BALL_R);
+    initBall(&balls[8], 9, p1.x + BALL_R * 2 * sqrt(3), p1.y, BALL_R);
+}
+
+// 更新
+void update(void) {
+    cueBall.p.x += cueBall.v.x;
+    cueBall.p.y += cueBall.v.y;
+
+    cueBall.v.x *= 1.0 - FRICTION;
+    cueBall.v.y *= 1.0 - FRICTION;
+}
+
+// ball構造体を初期化
+void initBall(struct ball *ball, int num, double px, double py, double r) {
+    ball->num = num;
+    ball->p.x = px;
+    ball->p.y = py;
+    ball->v.x = 0;
+    ball->v.y = 0;
+    ball->r = r;
+}
+
 // 画面描画
 void Display(void) {
+    int i;
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glColor3ub(0, 0, 0);
+    drawBall(cueBall);
+
+    for (i = 0; i < BALL_NUM; i++) {
+        drawBall(balls[i]);
+    }
+
     glFlush();
 }
 
@@ -68,18 +121,13 @@ void Reshape(int w, int h) {
 
 // タイマー
 void Timer(int value) {
-    struct timeval tv;
-
     // 次のタイマーを登録
     glutTimerFunc(1000.0 / FPS + 0.5, Timer, 0);
-
-    // 時刻を取得
-    gettimeofday(&tv, NULL);
-    t = tv.tv_sec + tv.tv_usec * 1e-6;
-
+    update();
     Display();
 }
 
+// マウスクリック
 void Mouse(int b, int s, int x, int y) {
     if (b == GLUT_LEFT_BUTTON) {
         if (s == GLUT_UP) {
@@ -100,14 +148,32 @@ void Mouse(int b, int s, int x, int y) {
         if (s == GLUT_UP) printf("右ボタンアップ");
         if (s == GLUT_DOWN) printf("右ボタンダウン");
     }
-
-    printf(" at (%d, %d)\n", x, y);
 }
 
+// マウス移動
 void PassiveMotion(int x, int y) {
-    printf("PassiveMotion : (x, y) = (%d, %d)\n", x, y);
 }
 
+// マウスドラッグ
 void Motion(int x, int y) {
-    printf("Motion : (x, y) = (%d, %d)\n", x, y);
+}
+
+// 正円を描画
+void drawCircle(double x, double y, double r) {
+    int i;
+    int h = 30;
+
+    glBegin(GL_LINE_LOOP);
+
+    for (i = 0; i < h; i++) {
+        double theta = 2 * M_PI * i / h;
+        glVertex2d(x + r * sin(theta), y + r * cos(theta));
+    }
+
+    glEnd();
+}
+
+// ボールを描画
+void drawBall(struct ball ball) {
+    drawCircle(ball.p.x, ball.p.y, ball.r);
 }
