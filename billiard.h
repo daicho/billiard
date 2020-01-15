@@ -1,7 +1,7 @@
 #ifndef BILLIARD_H
 #define BILLIARD_H
 
-#define BALL_NUM 9
+#define BALL_NUM 10
 
 // 二次元ベクトル
 struct vector {
@@ -23,13 +23,13 @@ void Timer(int);
 void Mouse(int, int, int, int);
 void PassiveMotion(int, int);
 void Motion(int, int);
+
 void init(void);
 void update(void);
 void initBall(struct ball *, int, double, double, double);
 void drawCircle(double, double, double);
 void drawBall(struct ball);
 
-extern struct ball cueBall;
 extern struct ball balls[BALL_NUM];
 
 #endif

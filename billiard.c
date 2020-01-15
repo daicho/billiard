@@ -13,7 +13,7 @@
 #define FRICTION 0.01         // 摩擦
 #define BALL_R   0.05         // ボールの半径
 
-struct ball cueBall;
+// ボール
 struct ball balls[BALL_NUM];
 
 int main(int argc, char *argv[]) {
@@ -54,28 +54,41 @@ int main(int argc, char *argv[]) {
 // 初期化
 void init(void) {
     struct vector p1 = {0.5, 0}; // 1番玉の位置
+    double r = BALL_R + 0.001;
 
-    initBall(&cueBall, 0, 0, 0, BALL_R);
-    cueBall.v.x = 0.01;
+    initBall(&balls[0], 0, 0, 0, BALL_R);
+    balls[0].v.x = 0.01;
 
-    initBall(&balls[0], 1, p1.x, p1.y, BALL_R);
-    initBall(&balls[1], 2, p1.x + BALL_R * 2 * sqrt(3), p1.y - BALL_R * 2, BALL_R);
-    initBall(&balls[2], 3, p1.x + BALL_R * 4 * sqrt(3), p1.y, BALL_R);
-    initBall(&balls[3], 4, p1.x + BALL_R * 2 * sqrt(3), p1.y + BALL_R * 2, BALL_R);
-    initBall(&balls[4], 5, p1.x + BALL_R * sqrt(3), p1.y - BALL_R, BALL_R);
-    initBall(&balls[5], 6, p1.x + BALL_R * sqrt(3), p1.y + BALL_R, BALL_R);
-    initBall(&balls[6], 7, p1.x + BALL_R * 3 * sqrt(3), p1.y - BALL_R, BALL_R);
-    initBall(&balls[7], 8, p1.x + BALL_R * 3 * sqrt(3), p1.y + BALL_R, BALL_R);
-    initBall(&balls[8], 9, p1.x + BALL_R * 2 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
+    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
+    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R);
+    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
+    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R);
+    initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
 }
 
 // 更新
 void update(void) {
-    cueBall.p.x += cueBall.v.x;
-    cueBall.p.y += cueBall.v.y;
+    int i, j;
 
-    cueBall.v.x *= 1.0 - FRICTION;
-    cueBall.v.y *= 1.0 - FRICTION;
+    for (i = 0; i < BALL_NUM; i++) {
+        balls[i].p.x += balls[i].v.x;
+        balls[i].p.y += balls[i].v.y;
+
+        balls[i].v.x *= 1.0 - FRICTION;
+        balls[i].v.y *= 1.0 - FRICTION;
+    }
+
+    for (i = 0; i < BALL_NUM; i++) {
+        for (j = i + 1; j < BALL_NUM; j++) {
+            if (pow(balls[i].p.x - balls[j].p.x, 2) + pow(balls[i].p.y - balls[j].p.y, 2) < pow(BALL_R * 2, 2)) {
+                printf("%dと%dが衝突\n", i, j);
+            }
+        }
+    }
 }
 
 // ball構造体を初期化
@@ -95,7 +108,6 @@ void Display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glColor3ub(0, 0, 0);
-    drawBall(cueBall);
 
     for (i = 0; i < BALL_NUM; i++) {
         drawBall(balls[i]);
