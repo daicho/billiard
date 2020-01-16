@@ -10,7 +10,7 @@
 
 #define FPS      60           // フレームレート
 #define ASPECT   (16.0 / 9.0) // アスペクト比(幅/高さ)
-#define FRICTION 0.01         // 摩擦
+#define FRICTION 0.00005      // 摩擦
 #define BALL_R   0.05         // ボールの半径
 
 // ボール
@@ -78,19 +78,35 @@ void update(void) {
         balls[i].p.x += balls[i].v.x;
         balls[i].p.y += balls[i].v.y;
 
-        balls[i].v.x *= 1.0 - FRICTION;
-        balls[i].v.y *= 1.0 - FRICTION;
+        if (mag(balls[i].v) <= 0.0001) {
+            balls[i].v.x = 0;
+            balls[i].v.y = 0;
+        } else {
+            balls[i].v.x -= FRICTION * balls[i].v.x / mag(balls[i].v);
+            balls[i].v.y -= FRICTION * balls[i].v.y / mag(balls[i].v);
+        }
     }
 
     for (i = 0; i < BALL_NUM; i++) {
         for (j = i + 1; j < BALL_NUM; j++) {
             if (pow(balls[i].p.x - balls[j].p.x, 2) + pow(balls[i].p.y - balls[j].p.y, 2) < pow(BALL_R * 2, 2)) {
                 struct vector v1, v2;
+                struct vector dir;
+                double dist;
+                double l;
 
-                v1.x = mag(balls[j].v) * (balls[i].p.x - balls[j].p.x) / (BALL_R * 2);
-                v1.y = mag(balls[j].v) * (balls[i].p.y - balls[j].p.y) / (BALL_R * 2);
-                v2.x = mag(balls[i].v) * (balls[j].p.x - balls[i].p.x) / (BALL_R * 2);
-                v2.y = mag(balls[i].v) * (balls[j].p.y - balls[i].p.y) / (BALL_R * 2);
+                dir.x = balls[i].p.x - balls[j].p.x;
+                dir.y = balls[i].p.y - balls[j].p.y;
+                dist = mag(dir);
+                dir.x /= dist;
+                dir.x /= dist;
+
+
+
+                v1.x = balls[i].v.x + l * dir.x;
+                v1.y = balls[i].v.y + l * dir.y;
+                v2.x = balls[j].v.x + l * dir.x;
+                v2.y = balls[j].v.y + l * dir.y;
 
                 balls[i].v = v1;
                 balls[j].v = v2;
