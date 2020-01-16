@@ -1,13 +1,9 @@
 #ifndef BILLIARD_H
 #define BILLIARD_H
 
-#define BALL_NUM 10
+#include "vector.h"
 
-// 二次元ベクトル
-struct vector {
-    double x;
-    double y;
-};
+#define BALL_NUM 10
 
 // ボール
 struct ball {
@@ -27,9 +23,6 @@ void Motion(int, int);
 void init(void);
 void update(void);
 void initBall(struct ball *, int, double, double, double);
-double mag(struct vector);
-void showVector(struct vector);
-void drawCircle(double, double, double);
 void drawBall(struct ball);
 
 extern struct ball balls[BALL_NUM];

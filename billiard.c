@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 #include <time.h>
 
@@ -7,6 +6,8 @@
 #include <GL/glpng.h>
 
 #include "billiard.h"
+#include "vector.h"
+#include "shape.h"
 
 #define FPS      60           // フレームレート
 #define ASPECT   (16.0 / 9.0) // アスペクト比(幅/高さ)
@@ -49,120 +50,6 @@ int main(int argc, char *argv[]) {
     glutMainLoop();
 
     return 0;
-}
-
-// 初期化
-void init(void) {
-    struct vector p1 = {0.5, 0}; // 1番玉の位置
-    double r = BALL_R + 0.001;   // ボールの間隔
-
-    initBall(&balls[0], 0, 0, 0, BALL_R);
-    initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
-    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
-    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
-    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R);
-    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
-    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
-    initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R);
-    initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R);
-    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
-}
-
-// 更新
-void update(void) {
-    int i, j;
-
-    for (i = 0; i < BALL_NUM; i++) {
-        balls[i].p.x += balls[i].v.x;
-        balls[i].p.y += balls[i].v.y;
-
-        if (mag(balls[i].v) <= 0.0001) {
-            balls[i].v.x = 0;
-            balls[i].v.y = 0;
-        } else {
-            balls[i].v.x -= FRICTION * balls[i].v.x / mag(balls[i].v);
-            balls[i].v.y -= FRICTION * balls[i].v.y / mag(balls[i].v);
-        }
-    }
-
-    for (i = 0; i < BALL_NUM; i++) {
-        for (j = i + 1; j < BALL_NUM; j++) {
-            if (pow(balls[i].p.x - balls[j].p.x, 2) + pow(balls[i].p.y - balls[j].p.y, 2) < pow(BALL_R * 2, 2)) {
-                struct vector dir_p;
-                struct vector dir_v;
-                double dist;
-                double l;
-
-                dir_p.x = balls[i].p.x - balls[j].p.x;
-                dir_p.y = balls[i].p.y - balls[j].p.y;
-                dist = mag(dir_p);
-                dir_p.x /= dist;
-                dir_p.y /= dist;
-
-                balls[i].p.x += dir_p.x * (BALL_R - dist / 2);
-                balls[i].p.y += dir_p.y * (BALL_R - dist / 2);
-                balls[j].p.x -= dir_p.x * (BALL_R - dist / 2);
-                balls[j].p.y -= dir_p.y * (BALL_R - dist / 2);
-
-                dir_p.x = balls[i].p.x - balls[j].p.x;
-                dir_p.y = balls[i].p.y - balls[j].p.y;
-                dist = mag(dir_p);
-                dir_p.x /= dist;
-                dir_p.y /= dist;
-
-                dir_v.x = balls[i].v.x - balls[j].v.x;
-                dir_v.y = balls[i].v.y - balls[j].v.y;
-                l = -(dir_p.x * dir_v.x + dir_p.y * dir_v.y);
-
-                balls[i].v.x += l * dir_p.x;
-                balls[i].v.y += l * dir_p.y;
-                balls[j].v.x -= l * dir_p.x;
-                balls[j].v.y -= l * dir_p.y;
-            }
-        }
-    }
-
-    for (i = 0; i < BALL_NUM; i++) {
-        if (balls[i].p.x > 1) {
-            balls[i].p.x = 1;
-            balls[i].v.x *= -1;
-        }
-
-        if (balls[i].p.x < -1) {
-            balls[i].p.x = -1;
-            balls[i].v.x *= -1;
-        }
-
-        if (balls[i].p.y > 1) {
-            balls[i].p.y = 1;
-            balls[i].v.y *= -1;
-        }
-
-        if (balls[i].p.y < -1) {
-            balls[i].p.y = -1;
-            balls[i].v.y *= -1;
-        }
-    }
-}
-
-// ball構造体を初期化
-void initBall(struct ball *ball, int num, double px, double py, double r) {
-    ball->num = num;
-    ball->p.x = px;
-    ball->p.y = py;
-    ball->v.x = 0;
-    ball->v.y = 0;
-    ball->r = r;
-}
-
-// ベクトルの大きさを返す
-double mag(struct vector vector) {
-    return sqrt(pow(vector.x, 2) + pow(vector.y, 2));
-}
-
-// ベクトルの内容を表示
-void showVector(struct vector vector) {
-    printf("(%f, %f)\n", vector.x, vector.y);
 }
 
 // 画面描画
@@ -212,35 +99,13 @@ void Mouse(int b, int s, int x, int y) {
     // ウィンドウの縦横比
     double ratio = (double)w / h;
 
-    if (ratio > ASPECT) {
-        point.x = ((double)x / w - 0.5) * 2 * ratio;
-        point.y = ((double)y / h - 0.5) * -2;
-    } else {
-        point.x = ((double)x / w - 0.5) * 2 * ASPECT;
-        point.y = ((double)y / h - 0.5) * 2 * ASPECT / -ratio;
-    }
+    if (ratio > ASPECT)
+        set(&point, ((double)x / w - 0.5) * 2 * ratio, ((double)y / h - 0.5) * -2);
+    else
+        set(&point, ((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
 
-    if (b == GLUT_LEFT_BUTTON) {
-        if (s == GLUT_UP) {
-            printf("左ボタンアップ\n");
-        }
-
-        if (s == GLUT_DOWN) {
-            printf("左ボタンダウン\n");
-            balls[0].v.x = (point.x - balls[0].p.x) / 20;
-            balls[0].v.y = (point.y - balls[0].p.y) / 20;
-        }
-    }
-
-    if (b == GLUT_MIDDLE_BUTTON) {
-        if (s == GLUT_UP) printf("中央ボタンアップ\n");
-        if (s == GLUT_DOWN) printf("中央ボタンダウン\n");
-    }
-
-    if (b == GLUT_RIGHT_BUTTON) {
-        if (s == GLUT_UP) printf("右ボタンアップ\n");
-        if (s == GLUT_DOWN) printf("右ボタンダウン\n");
-    }
+    if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN)
+        set(&balls[0].v, (point.x - balls[0].p.x) / 20, (point.y - balls[0].p.y) / 20);
 }
 
 // マウス移動
@@ -251,19 +116,100 @@ void PassiveMotion(int x, int y) {
 void Motion(int x, int y) {
 }
 
-// 正円を描画
-void drawCircle(double x, double y, double r) {
-    int i;
-    int h = 30;
+// 初期化
+void init(void) {
+    struct vector p1 = {0.5, 0}; // 1番玉の位置
+    double r = BALL_R + 0.001;   // ボールの間隔
 
-    glBegin(GL_LINE_LOOP);
+    initBall(&balls[0], 0, 0, 0, BALL_R);
+    initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
+    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
+    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R);
+    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
+    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R);
+    initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
+}
 
-    for (i = 0; i < h; i++) {
-        double theta = 2 * M_PI * i / h;
-        glVertex2d(x + r * sin(theta), y + r * cos(theta));
+// 更新
+void update(void) {
+    int i, j;
+
+    for (i = 0; i < BALL_NUM; i++) {
+        add(&balls[i].p, &balls[i].v);
+
+        if (mag(balls[i].v) <= 0.0001) {
+            set(&balls[i].v, 0, 0);
+        } else {
+            mult(&balls[i].v, 1 - FRICTION / mag(balls[i].v));
+            //balls[i].v.y -= FRICTION * balls[i].v.y / mag(balls[i].v);
+        }
     }
 
-    glEnd();
+    for (i = 0; i < BALL_NUM; i++) {
+        for (j = i + 1; j < BALL_NUM; j++) {
+            if (dist(balls[i].p, balls[i].p) < BALL_R * 2) {
+                struct vector dir_p, dir_v, temp;
+                double dist;
+
+                dir_p = balls[i].p;
+                sub(&dir_p, &balls[j].p);
+                dist = mag(dir_p);
+                divi(&dir_p, dist);
+
+                temp = dir_p;
+                mult(&temp, BALL_R - dist / 2);
+
+                add(&balls[i].p, &temp);
+                sub(&balls[j].p, &temp);
+
+                dir_p = balls[i].p;
+                sub(&dir_p, &balls[j].p);
+                divi(&dir_p, BALL_R * 2);
+
+                dir_v = balls[i].v;
+                sub(&dir_v, &balls[j].v);
+
+                temp = dir_p;
+                mult(&temp, -inner(dir_p, dir_v));
+
+                add(&balls[i].v, &temp);
+                sub(&balls[j].v, &temp);
+            }
+        }
+    }
+
+    for (i = 0; i < BALL_NUM; i++) {
+        if (balls[i].p.x > 1) {
+            balls[i].p.x = 1;
+            balls[i].v.x *= -1;
+        }
+
+        if (balls[i].p.x < -1) {
+            balls[i].p.x = -1;
+            balls[i].v.x *= -1;
+        }
+
+        if (balls[i].p.y > 1) {
+            balls[i].p.y = 1;
+            balls[i].v.y *= -1;
+        }
+
+        if (balls[i].p.y < -1) {
+            balls[i].p.y = -1;
+            balls[i].v.y *= -1;
+        }
+    }
+}
+
+// ball構造体を初期化
+void initBall(struct ball *ball, int num, double px, double py, double r) {
+    ball->num = num;
+    set(&ball->p, px, py);
+    set(&ball->v, 0, 0);
+    ball->r = r;
 }
 
 // ボールを描画
