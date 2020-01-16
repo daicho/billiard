@@ -27,6 +27,8 @@ void Motion(int, int);
 void init(void);
 void update(void);
 void initBall(struct ball *, int, double, double, double);
+double mag(struct vector);
+void showVector(struct vector);
 void drawCircle(double, double, double);
 void drawBall(struct ball);
 

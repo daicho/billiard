@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     // 初期化
     glutInit(&argc, argv);
     glutInitWindowSize(640, 360);
-    glutCreateWindow("Mechanical Clock");
+    glutCreateWindow("Billiard");
     glutInitDisplayMode(GLUT_RGBA);
     glClearColor(1.0, 1.0, 1.0, 1.0);
 
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 // 初期化
 void init(void) {
     struct vector p1 = {0.5, 0}; // 1番玉の位置
-    double r = BALL_R + 0.001;
+    double r = BALL_R + 0.011;   // ボールの間隔
 
     initBall(&balls[0], 0, 0, 0, BALL_R);
     balls[0].v.x = 0.01;
@@ -85,7 +85,15 @@ void update(void) {
     for (i = 0; i < BALL_NUM; i++) {
         for (j = i + 1; j < BALL_NUM; j++) {
             if (pow(balls[i].p.x - balls[j].p.x, 2) + pow(balls[i].p.y - balls[j].p.y, 2) < pow(BALL_R * 2, 2)) {
-                printf("%dと%dが衝突\n", i, j);
+                struct vector v1, v2;
+
+                v1.x = mag(balls[j].v) * (balls[i].p.x - balls[j].p.x) / (BALL_R * 2);
+                v1.y = mag(balls[j].v) * (balls[i].p.y - balls[j].p.y) / (BALL_R * 2);
+                v2.x = mag(balls[i].v) * (balls[j].p.x - balls[i].p.x) / (BALL_R * 2);
+                v2.y = mag(balls[i].v) * (balls[j].p.y - balls[i].p.y) / (BALL_R * 2);
+
+                balls[i].v = v1;
+                balls[j].v = v2;
             }
         }
     }
@@ -99,6 +107,16 @@ void initBall(struct ball *ball, int num, double px, double py, double r) {
     ball->v.x = 0;
     ball->v.y = 0;
     ball->r = r;
+}
+
+// ベクトルの大きさを返す
+double mag(struct vector vector) {
+    return sqrt(pow(vector.x, 2) + pow(vector.y, 2));
+}
+
+// ベクトルの内容を表示
+void showVector(struct vector vector) {
+    printf("(%f, %f)\n", vector.x, vector.y);
 }
 
 // 画面描画
