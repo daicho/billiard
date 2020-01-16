@@ -10,7 +10,7 @@
 
 #define FPS      60           // フレームレート
 #define ASPECT   (16.0 / 9.0) // アスペクト比(幅/高さ)
-#define FRICTION 0.00005      // 摩擦
+#define FRICTION 0.0002       // 摩擦
 #define BALL_R   0.05         // ボールの半径
 
 // ボール
@@ -99,6 +99,17 @@ void update(void) {
                 dir_p.x /= dist;
                 dir_p.y /= dist;
 
+                balls[i].p.x += dir_p.x * (BALL_R - dist / 2);
+                balls[i].p.y += dir_p.y * (BALL_R - dist / 2);
+                balls[j].p.x -= dir_p.x * (BALL_R - dist / 2);
+                balls[j].p.y -= dir_p.y * (BALL_R - dist / 2);
+
+                dir_p.x = balls[i].p.x - balls[j].p.x;
+                dir_p.y = balls[i].p.y - balls[j].p.y;
+                dist = mag(dir_p);
+                dir_p.x /= dist;
+                dir_p.y /= dist;
+
                 dir_v.x = balls[i].v.x - balls[j].v.x;
                 dir_v.y = balls[i].v.y - balls[j].v.y;
                 l = -(dir_p.x * dir_v.x + dir_p.y * dir_v.y);
@@ -108,6 +119,28 @@ void update(void) {
                 balls[j].v.x -= l * dir_p.x;
                 balls[j].v.y -= l * dir_p.y;
             }
+        }
+    }
+
+    for (i = 0; i < BALL_NUM; i++) {
+        if (balls[i].p.x > 1) {
+            balls[i].p.x = 1;
+            balls[i].v.x *= -1;
+        }
+
+        if (balls[i].p.x < -1) {
+            balls[i].p.x = -1;
+            balls[i].v.x *= -1;
+        }
+
+        if (balls[i].p.y > 1) {
+            balls[i].p.y = 1;
+            balls[i].v.y *= -1;
+        }
+
+        if (balls[i].p.y < -1) {
+            balls[i].p.y = -1;
+            balls[i].v.y *= -1;
         }
     }
 }
@@ -194,7 +227,8 @@ void Mouse(int b, int s, int x, int y) {
 
         if (s == GLUT_DOWN) {
             printf("左ボタンダウン\n");
-            showVector(point);
+            balls[0].v.x = (point.x - balls[0].p.x) / 20;
+            balls[0].v.y = (point.y - balls[0].p.y) / 20;
         }
     }
 
