@@ -54,11 +54,9 @@ int main(int argc, char *argv[]) {
 // 初期化
 void init(void) {
     struct vector p1 = {0.5, 0}; // 1番玉の位置
-    double r = BALL_R + 0.011;   // ボールの間隔
+    double r = BALL_R + 0.001;   // ボールの間隔
 
     initBall(&balls[0], 0, 0, 0, BALL_R);
-    balls[0].v.x = 0.01;
-
     initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
     initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
     initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
@@ -90,26 +88,25 @@ void update(void) {
     for (i = 0; i < BALL_NUM; i++) {
         for (j = i + 1; j < BALL_NUM; j++) {
             if (pow(balls[i].p.x - balls[j].p.x, 2) + pow(balls[i].p.y - balls[j].p.y, 2) < pow(BALL_R * 2, 2)) {
-                struct vector v1, v2;
-                struct vector dir;
+                struct vector dir_p;
+                struct vector dir_v;
                 double dist;
                 double l;
 
-                dir.x = balls[i].p.x - balls[j].p.x;
-                dir.y = balls[i].p.y - balls[j].p.y;
-                dist = mag(dir);
-                dir.x /= dist;
-                dir.x /= dist;
+                dir_p.x = balls[i].p.x - balls[j].p.x;
+                dir_p.y = balls[i].p.y - balls[j].p.y;
+                dist = mag(dir_p);
+                dir_p.x /= dist;
+                dir_p.y /= dist;
 
+                dir_v.x = balls[i].v.x - balls[j].v.x;
+                dir_v.y = balls[i].v.y - balls[j].v.y;
+                l = -(dir_p.x * dir_v.x + dir_p.y * dir_v.y);
 
-
-                v1.x = balls[i].v.x + l * dir.x;
-                v1.y = balls[i].v.y + l * dir.y;
-                v2.x = balls[j].v.x + l * dir.x;
-                v2.y = balls[j].v.y + l * dir.y;
-
-                balls[i].v = v1;
-                balls[j].v = v2;
+                balls[i].v.x += l * dir_p.x;
+                balls[i].v.y += l * dir_p.y;
+                balls[j].v.x -= l * dir_p.x;
+                balls[j].v.y -= l * dir_p.y;
             }
         }
     }
@@ -175,24 +172,40 @@ void Timer(int value) {
 
 // マウスクリック
 void Mouse(int b, int s, int x, int y) {
+    struct vector point;
+    int w = glutGet(GLUT_WINDOW_WIDTH);
+    int h = glutGet(GLUT_WINDOW_HEIGHT);
+
+    // ウィンドウの縦横比
+    double ratio = (double)w / h;
+
+    if (ratio > ASPECT) {
+        point.x = ((double)x / w - 0.5) * 2 * ratio;
+        point.y = ((double)y / h - 0.5) * -2;
+    } else {
+        point.x = ((double)x / w - 0.5) * 2 * ASPECT;
+        point.y = ((double)y / h - 0.5) * 2 * ASPECT / -ratio;
+    }
+
     if (b == GLUT_LEFT_BUTTON) {
         if (s == GLUT_UP) {
-            printf("左ボタンアップ");
+            printf("左ボタンアップ\n");
         }
 
         if (s == GLUT_DOWN) {
-            printf("左ボタンダウン");
+            printf("左ボタンダウン\n");
+            showVector(point);
         }
     }
 
     if (b == GLUT_MIDDLE_BUTTON) {
-        if (s == GLUT_UP) printf("中央ボタンアップ");
-        if (s == GLUT_DOWN) printf("中央ボタンダウン");
+        if (s == GLUT_UP) printf("中央ボタンアップ\n");
+        if (s == GLUT_DOWN) printf("中央ボタンダウン\n");
     }
 
     if (b == GLUT_RIGHT_BUTTON) {
-        if (s == GLUT_UP) printf("右ボタンアップ");
-        if (s == GLUT_DOWN) printf("右ボタンダウン");
+        if (s == GLUT_UP) printf("右ボタンアップ\n");
+        if (s == GLUT_DOWN) printf("右ボタンダウン\n");
     }
 }
 
