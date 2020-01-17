@@ -58,11 +58,8 @@ void Display(void) {
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glColor3ub(0, 0, 0);
-
-    for (i = 0; i < BALL_NUM; i++) {
+    for (i = 0; i < BALL_NUM; i++)
         drawBall(balls[i]);
-    }
 
     glFlush();
 }
@@ -140,17 +137,15 @@ void update(void) {
     for (i = 0; i < BALL_NUM; i++) {
         add(&balls[i].p, &balls[i].v);
 
-        if (mag(balls[i].v) <= 0.0001) {
+        if (mag(balls[i].v) <= 0.0001)
             set(&balls[i].v, 0, 0);
-        } else {
+        else
             mult(&balls[i].v, 1 - FRICTION / mag(balls[i].v));
-            //balls[i].v.y -= FRICTION * balls[i].v.y / mag(balls[i].v);
-        }
     }
 
     for (i = 0; i < BALL_NUM; i++) {
         for (j = i + 1; j < BALL_NUM; j++) {
-            if (dist(balls[i].p, balls[i].p) < BALL_R * 2) {
+            if (dist(balls[i].p, balls[j].p) < BALL_R * 2) {
                 struct vector dir_p, dir_v, temp;
                 double dist;
 
@@ -214,5 +209,6 @@ void initBall(struct ball *ball, int num, double px, double py, double r) {
 
 // ボールを描画
 void drawBall(struct ball ball) {
+    glColor3ub(0, 0, 0);
     drawCircle(ball.p.x, ball.p.y, ball.r);
 }
