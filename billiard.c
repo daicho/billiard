@@ -96,13 +96,14 @@ void Mouse(int b, int s, int x, int y) {
     // ウィンドウの縦横比
     double ratio = (double)w / h;
 
+    // マウスの座標を描画時の座標系に変換
     if (ratio > ASPECT)
         set(&point, ((double)x / w - 0.5) * 2 * ratio, ((double)y / h - 0.5) * -2);
     else
         set(&point, ((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
 
     if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN)
-        set(&balls[0].v, (point.x - balls[0].p.x) / 20, (point.y - balls[0].p.y) / 20);
+        balls[0].v = split(minus(point, balls[0].p), 20);
 }
 
 // マウス移動
@@ -116,7 +117,7 @@ void Motion(int x, int y) {
 // 初期化
 void init(void) {
     struct vector p1 = {0.5, 0}; // 1番玉の位置
-    double r = BALL_R + 0.001;   // ボールの間隔
+    double r = BALL_R + 0.0001;   // ボールの間隔
 
     initBall(&balls[0], 0, 0, 0, BALL_R);
     initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
@@ -134,44 +135,43 @@ void init(void) {
 void update(void) {
     int i, j;
 
+    // 移動
     for (i = 0; i < BALL_NUM; i++) {
-        add(&balls[i].p, &balls[i].v);
+        add(&balls[i].p, balls[i].v);
 
         if (mag(balls[i].v) <= 0.0001)
-            set(&balls[i].v, 0, 0);
+            balls[i].v = ZERO;
         else
             mult(&balls[i].v, 1 - FRICTION / mag(balls[i].v));
     }
 
+    // ボール同士の衝突
     for (i = 0; i < BALL_NUM; i++) {
         for (j = i + 1; j < BALL_NUM; j++) {
             if (dist(balls[i].p, balls[j].p) < BALL_R * 2) {
                 struct vector dir_p, dir_v, temp;
                 double dist;
 
-                dir_p = balls[i].p;
-                sub(&dir_p, &balls[j].p);
+                // ボールの重なりを修正
+                dir_p = minus(balls[i].p, balls[j].p);
                 dist = mag(dir_p);
                 divi(&dir_p, dist);
 
-                temp = dir_p;
-                mult(&temp, BALL_R - dist / 2);
+                temp = times(dir_p, BALL_R - dist / 2);
+                add(&balls[i].p, temp);
+                sub(&balls[j].p, temp);
 
-                add(&balls[i].p, &temp);
-                sub(&balls[j].p, &temp);
+                // 2つのボールの位置の単位ベクトル
+                dir_p = minus(balls[i].p, balls[j].p);
+                divi(&dir_p, mag(dir_p));
 
-                dir_p = balls[i].p;
-                sub(&dir_p, &balls[j].p);
-                divi(&dir_p, BALL_R * 2);
+                // 2つのボールの相対速度
+                dir_v = minus(balls[i].v, balls[j].v);
 
-                dir_v = balls[i].v;
-                sub(&dir_v, &balls[j].v);
-
-                temp = dir_p;
-                mult(&temp, -inner(dir_p, dir_v));
-
-                add(&balls[i].v, &temp);
-                sub(&balls[j].v, &temp);
+                // 衝突後の速度を決定
+                temp = times(dir_p, -inner(dir_p, dir_v));
+                add(&balls[i].v, temp);
+                sub(&balls[j].v, temp);
             }
         }
     }
@@ -203,7 +203,7 @@ void update(void) {
 void initBall(struct ball *ball, int num, double px, double py, double r) {
     ball->num = num;
     set(&ball->p, px, py);
-    set(&ball->v, 0, 0);
+    ball->v = ZERO;
     ball->r = r;
 }
 
