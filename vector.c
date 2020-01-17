@@ -69,9 +69,24 @@ struct vector split(struct vector a, double r) {
     return c;
 }
 
+// 回転
+void rotate(struct vector *a, double r) {
+    set(a, a->x * cos(r) - a->y * sin(r), a->x * sin(r) + a->y * cos(r));
+}
+
+// 正規化
+void normal(struct vector *a) {
+    divi(a, mag(*a));
+}
+
 // 大きさ
 double mag(struct vector a) {
     return sqrt(pow(a.x, 2) + pow(a.y, 2));
+}
+
+// ベクトルの角度
+double angle(struct vector a) {
+    return atan2(a.y, a.x);
 }
 
 // 距離

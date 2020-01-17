@@ -20,9 +20,14 @@ struct vector minus(struct vector, struct vector);
 struct vector times(struct vector, double);
 struct vector split(struct vector, double);
 
+void rotate(struct vector *, double);
+void normal(struct vector *);
+
 double mag(struct vector);
+double angle(struct vector);
 double dist(struct vector, struct vector);
 double inner(struct vector, struct vector);
+
 void show(struct vector);
 
 extern const struct vector ZERO;

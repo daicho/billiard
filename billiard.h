@@ -13,6 +13,13 @@ struct ball {
     double r;        // 半径
 };
 
+// テーブル
+struct table {
+    int pocket_num;
+    struct vector *pockets;
+    void (*collide)(void);
+};
+
 void Display(void);
 void Reshape(int, int);
 void Timer(int);
@@ -25,6 +32,10 @@ void update(void);
 void initBall(struct ball *, int, double, double, double);
 void drawBall(struct ball);
 
+void collideSquare(void);
+void collideCircle(void);
+
 extern struct ball balls[BALL_NUM];
+extern struct table table;
 
 #endif

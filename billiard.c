@@ -17,6 +17,9 @@
 // ボール
 struct ball balls[BALL_NUM];
 
+// テーブル
+struct table table = {0, NULL, collideCircle};
+
 int main(int argc, char *argv[]) {
     // 初期化
     glutInit(&argc, argv);
@@ -155,7 +158,7 @@ void update(void) {
                 // ボールの重なりを修正
                 dir_p = minus(balls[i].p, balls[j].p);
                 dist = mag(dir_p);
-                divi(&dir_p, dist);
+                normal(&dir_p);
 
                 temp = times(dir_p, BALL_R - dist / 2);
                 add(&balls[i].p, temp);
@@ -163,7 +166,7 @@ void update(void) {
 
                 // 2つのボールの位置の単位ベクトル
                 dir_p = minus(balls[i].p, balls[j].p);
-                divi(&dir_p, mag(dir_p));
+                normal(&dir_p);
 
                 // 2つのボールの相対速度
                 dir_v = minus(balls[i].v, balls[j].v);
@@ -175,6 +178,28 @@ void update(void) {
             }
         }
     }
+
+    // テーブルとの衝突判定
+    table.collide();
+}
+
+// ball構造体を初期化
+void initBall(struct ball *ball, int num, double px, double py, double r) {
+    ball->num = num;
+    set(&ball->p, px, py);
+    ball->v = ZERO;
+    ball->r = r;
+}
+
+// ボールを描画
+void drawBall(struct ball ball) {
+    glColor3ub(0, 0, 0);
+    drawCircle(ball.p.x, ball.p.y, ball.r);
+}
+
+// 四角いテーブルの衝突判定
+void collideSquare(void) {
+    int i;
 
     for (i = 0; i < BALL_NUM; i++) {
         if (balls[i].p.x > 1) {
@@ -199,16 +224,14 @@ void update(void) {
     }
 }
 
-// ball構造体を初期化
-void initBall(struct ball *ball, int num, double px, double py, double r) {
-    ball->num = num;
-    set(&ball->p, px, py);
-    ball->v = ZERO;
-    ball->r = r;
-}
+// 丸いテーブルの衝突判定
+void collideCircle(void) {
+    int i;
 
-// ボールを描画
-void drawBall(struct ball ball) {
-    glColor3ub(0, 0, 0);
-    drawCircle(ball.p.x, ball.p.y, ball.r);
+    for (i = 0; i < BALL_NUM; i++) {
+        if (mag(balls[i].p) > 1) {
+            normal(&balls[i].p);
+            rotate(&balls[i].v, M_PI - (angle(balls[i].v) - angle(balls[i].p)) * 2);
+        }
+    }
 }
