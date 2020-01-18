@@ -11,7 +11,7 @@
 
 #define FPS      60     // フレームレート
 #define ASPECT   2      // アスペクト比 (幅/高さ)
-#define FRICTION 0.0002 // 摩擦
+#define FRICTION 0.0003 // 摩擦
 #define BALL_R   0.0393 // ボールの半径
 #define TABLE_W  1.75   // テーブルの幅
 #define TABLE_H  0.875  // テーブルの高さ
@@ -168,7 +168,7 @@ void update(void) {
 
         add(&balls[i].p, balls[i].v);
 
-        if (mag(balls[i].v) <= 0.0001)
+        if (mag(balls[i].v) <= 0.001)
             balls[i].v = ZERO;
         else
             mult(&balls[i].v, 1 - FRICTION / mag(balls[i].v));
@@ -184,7 +184,7 @@ void update(void) {
         for (j = i + 1; j < BALL_NUM; j++) {
             if (!balls[j].exist) continue;
 
-            if (dist(balls[i].p, balls[j].p) < BALL_R * 2) {
+            if (dist(balls[i].p, balls[j].p) < balls[i].r + balls[j].r) {
                 struct vector dir_p, dir_v, temp;
                 double dist;
 
@@ -193,7 +193,7 @@ void update(void) {
                 dist = mag(dir_p);
                 normal(&dir_p);
 
-                temp = times(dir_p, BALL_R - dist / 2);
+                temp = times(dir_p, (balls[i].r + balls[j].r - dist) / 2);
                 add(&balls[i].p, temp);
                 sub(&balls[j].p, temp);
 
@@ -227,8 +227,11 @@ void initBall(struct ball *ball, int num, double px, double py, double r) {
 
 // ボールを描画
 void drawBall(struct ball ball) {
-    glColor3ub(0, 0, 0);
-    drawCircle(ball.p.x, ball.p.y, ball.r);
+    glColor3d(1.0, 1.0, 1.0);
+    glPushMatrix();
+    glTranslated(ball.p.x, ball.p.y, -ball.r * 2);
+    glutSolidSphere(ball.r, 20, 20);
+    glPopMatrix();
 }
 
 // 四角いテーブルの衝突判定
@@ -238,23 +241,23 @@ void collideSquare(void) {
     for (i = 0; i < BALL_NUM; i++) {
         if (!balls[i].exist) continue;
 
-        if (balls[i].p.x > TABLE_W - BALL_R) {
-            balls[i].p.x = TABLE_W - BALL_R;
+        if (balls[i].p.x > TABLE_W - balls[i].r) {
+            balls[i].p.x = TABLE_W - balls[i].r;
             balls[i].v.x *= -1;
         }
 
-        if (balls[i].p.x < -TABLE_W + BALL_R) {
-            balls[i].p.x = -TABLE_W + BALL_R;
+        if (balls[i].p.x < -TABLE_W + balls[i].r) {
+            balls[i].p.x = -TABLE_W + balls[i].r;
             balls[i].v.x *= -1;
         }
 
-        if (balls[i].p.y > TABLE_H - BALL_R) {
-            balls[i].p.y = TABLE_H - BALL_R;
+        if (balls[i].p.y > TABLE_H - balls[i].r) {
+            balls[i].p.y = TABLE_H - balls[i].r;
             balls[i].v.y *= -1;
         }
 
-        if (balls[i].p.y < -TABLE_H + BALL_R) {
-            balls[i].p.y = -TABLE_H + BALL_R;
+        if (balls[i].p.y < -TABLE_H + balls[i].r) {
+            balls[i].p.y = -TABLE_H + balls[i].r;
             balls[i].v.y *= -1;
         }
     }
@@ -267,9 +270,9 @@ void collideCircle(void) {
     for (i = 0; i < BALL_NUM; i++) {
         if (!balls[i].exist) continue;
 
-        if (mag(balls[i].p) > 1 - BALL_R) {
+        if (mag(balls[i].p) > 1 - balls[i].r) {
             normal(&balls[i].p);
-            mult(&balls[i].p, 1 - BALL_R);
+            mult(&balls[i].p, 1 - balls[i].r);
             rotate(&balls[i].v, M_PI - (angle(balls[i].v) - angle(balls[i].p)) * 2);
         }
     }

@@ -26,30 +26,30 @@ void drawCircle(double x, double y, double r) {
 // w, h : サイズ
 // pngInfo : 画像情報
 void putSprite(GLuint num, double x, double y, double w, double h) {
-    float color[4];
+    GLdouble color[4];
 
     // 現在の色を保存
-    glGetFloatv(GL_CURRENT_COLOR, color);
+    glGetDoublev(GL_CURRENT_COLOR, color);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, num);
-    glColor4ub(255, 255, 255, 255);
+    glColor4d(1.0, 1.0, 1.0, 1.0);
 
     glBegin(GL_QUADS);
 
-    glTexCoord2i(0, 0);
+    glTexCoord2d(0, 0);
     glVertex2d(x - w / 2, y + h / 2);
 
-    glTexCoord2i(0, 1);
+    glTexCoord2d(0, 1);
     glVertex2d(x - w / 2, y - h / 2);
 
-    glTexCoord2i(1, 1);
+    glTexCoord2d(1, 1);
     glVertex2d(x + w / 2, y - h / 2);
 
-    glTexCoord2i(1, 0);
+    glTexCoord2d(1, 0);
     glVertex2d(x + w / 2, y + h / 2);
 
     glEnd();
-    glColor3fv(color);
+    glColor3dv(color);
     glDisable(GL_TEXTURE_2D);
 }
