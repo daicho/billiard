@@ -9,21 +9,32 @@
 #include "vector.h"
 #include "shape.h"
 
-#define FPS      60           // フレームレート
-#define ASPECT   (16.0 / 9.0) // アスペクト比(幅/高さ)
-#define FRICTION 0.0002       // 摩擦
-#define BALL_R   0.05         // ボールの半径
+#define FPS      60     // フレームレート
+#define ASPECT   2      // アスペクト比 (幅/高さ)
+#define FRICTION 0.0002 // 摩擦
+#define BALL_R   0.0393 // ボールの半径
+#define TABLE_W  1.75   // テーブルの幅
+#define TABLE_H  0.875  // テーブルの高さ
 
 // ボール
 struct ball balls[BALL_NUM];
 
 // テーブル
-struct table table = {0, NULL, 10, collideCircle, 0};
+struct vector pockets[6] = {
+    {-TABLE_W, TABLE_H},
+    {0,        TABLE_H},
+    {TABLE_W,  TABLE_H},
+    {-TABLE_W, -TABLE_H},
+    {0,        -TABLE_H},
+    {TABLE_W,  -TABLE_H}
+};
+
+struct table table = {6, pockets, 0.0896, collideSquare};
 
 int main(int argc, char *argv[]) {
     // 初期化
     glutInit(&argc, argv);
-    glutInitWindowSize(640, 360);
+    glutInitWindowSize(720, 360);
     glutCreateWindow("Billiard");
     glutInitDisplayMode(GLUT_RGBA);
     glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -38,7 +49,7 @@ int main(int argc, char *argv[]) {
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
     // 画像読み込み
-    //dial_img = pngBind("dial.png", PNG_NOMIPMAP, PNG_ALPHA, &dial_info, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    table.img = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
     // コールバック関数登録
     glutDisplayFunc(Display);
@@ -61,8 +72,12 @@ void Display(void) {
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    for (i = 0; i < BALL_NUM; i++)
-        drawBall(balls[i]);
+    putSprite(table.img, 0, 0, ASPECT * 2, 2);
+
+    for (i = 0; i < BALL_NUM; i++) {
+        if (balls[i].exist)
+            drawBall(balls[i]);
+    }
 
     glFlush();
 }
@@ -128,10 +143,10 @@ void Motion(int x, int y) {
 
 // 初期化
 void init(void) {
-    struct vector p1 = {0.5, 0}; // 1番玉の位置
+    struct vector p1 = {TABLE_W / 2, 0}; // 1番玉の位置
     double r = BALL_R + 0.0001;   // ボールの間隔
 
-    initBall(&balls[0], 0, 0, 0, BALL_R);
+    initBall(&balls[0], 0, -TABLE_W / 2, 0, BALL_R);
     initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
     initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
     initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
@@ -149,6 +164,8 @@ void update(void) {
 
     // 移動
     for (i = 0; i < BALL_NUM; i++) {
+        if (!balls[i].exist) continue;
+
         add(&balls[i].p, balls[i].v);
 
         if (mag(balls[i].v) <= 0.0001)
@@ -157,9 +174,16 @@ void update(void) {
             mult(&balls[i].v, 1 - FRICTION / mag(balls[i].v));
     }
 
+    // ポケット判定
+    pocket();
+
     // ボール同士の衝突
     for (i = 0; i < BALL_NUM; i++) {
+        if (!balls[i].exist) continue;
+
         for (j = i + 1; j < BALL_NUM; j++) {
+            if (!balls[j].exist) continue;
+
             if (dist(balls[i].p, balls[j].p) < BALL_R * 2) {
                 struct vector dir_p, dir_v, temp;
                 double dist;
@@ -195,6 +219,7 @@ void update(void) {
 // ball構造体を初期化
 void initBall(struct ball *ball, int num, double px, double py, double r) {
     ball->num = num;
+    ball->exist = 1;
     set(&ball->p, px, py);
     ball->v = ZERO;
     ball->r = r;
@@ -211,23 +236,25 @@ void collideSquare(void) {
     int i;
 
     for (i = 0; i < BALL_NUM; i++) {
-        if (balls[i].p.x > 1) {
-            balls[i].p.x = 1;
+        if (!balls[i].exist) continue;
+
+        if (balls[i].p.x > TABLE_W - BALL_R) {
+            balls[i].p.x = TABLE_W - BALL_R;
             balls[i].v.x *= -1;
         }
 
-        if (balls[i].p.x < -1) {
-            balls[i].p.x = -1;
+        if (balls[i].p.x < -TABLE_W + BALL_R) {
+            balls[i].p.x = -TABLE_W + BALL_R;
             balls[i].v.x *= -1;
         }
 
-        if (balls[i].p.y > 1) {
-            balls[i].p.y = 1;
+        if (balls[i].p.y > TABLE_H - BALL_R) {
+            balls[i].p.y = TABLE_H - BALL_R;
             balls[i].v.y *= -1;
         }
 
-        if (balls[i].p.y < -1) {
-            balls[i].p.y = -1;
+        if (balls[i].p.y < -TABLE_H + BALL_R) {
+            balls[i].p.y = -TABLE_H + BALL_R;
             balls[i].v.y *= -1;
         }
     }
@@ -238,9 +265,29 @@ void collideCircle(void) {
     int i;
 
     for (i = 0; i < BALL_NUM; i++) {
-        if (mag(balls[i].p) > 1) {
+        if (!balls[i].exist) continue;
+
+        if (mag(balls[i].p) > 1 - BALL_R) {
             normal(&balls[i].p);
+            mult(&balls[i].p, 1 - BALL_R);
             rotate(&balls[i].v, M_PI - (angle(balls[i].v) - angle(balls[i].p)) * 2);
+        }
+    }
+}
+
+// ポケットに入ったか
+void pocket(void) {
+    int i, j;
+
+    for (i = 0; i < BALL_NUM; i++) {
+        if (!balls[i].exist) continue;
+
+        for (j = 0; j < table.pocket_num; j++) {
+            if (dist(balls[i].p, table.pockets[j]) < table.pocket_r) {
+                balls[i].exist = 0;
+                balls[i].v = ZERO;
+                break;
+            }
         }
     }
 }

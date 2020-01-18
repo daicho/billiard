@@ -25,7 +25,7 @@ void drawCircle(double x, double y, double r) {
 // x, y : 座標
 // w, h : サイズ
 // pngInfo : 画像情報
-void putSprite(GLuint num, double x, double y, double w, double h, pngInfo *info) {
+void putSprite(GLuint num, double x, double y, double w, double h) {
     float color[4];
 
     // 現在の色を保存
@@ -38,16 +38,16 @@ void putSprite(GLuint num, double x, double y, double w, double h, pngInfo *info
     glBegin(GL_QUADS);
 
     glTexCoord2i(0, 0);
-    glVertex2d(x, y + h);
+    glVertex2d(x - w / 2, y + h / 2);
 
     glTexCoord2i(0, 1);
-    glVertex2d(x, y);
+    glVertex2d(x - w / 2, y - h / 2);
 
     glTexCoord2i(1, 1);
-    glVertex2d(x + w, y);
+    glVertex2d(x + w / 2, y - h / 2);
 
     glTexCoord2i(1, 0);
-    glVertex2d(x + w, y + h);
+    glVertex2d(x + w / 2, y + h / 2);
 
     glEnd();
     glColor3fv(color);
