@@ -1,6 +1,9 @@
 #ifndef BILLIARD_H
 #define BILLIARD_H
 
+#include <GL/glut.h>
+#include <GL/glpng.h>
+
 #include "vector.h"
 
 #define BALL_NUM 10
@@ -17,7 +20,9 @@ struct ball {
 struct table {
     int pocket_num;
     struct vector *pockets;
+    double pocket_r;
     void (*collide)(void);
+    GLuint img;
 };
 
 void Display(void);

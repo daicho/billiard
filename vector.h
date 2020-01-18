@@ -27,6 +27,7 @@ double mag(struct vector);
 double angle(struct vector);
 double dist(struct vector, struct vector);
 double inner(struct vector, struct vector);
+int isZero(struct vector);
 
 void show(struct vector);
 

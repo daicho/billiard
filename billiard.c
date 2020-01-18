@@ -18,7 +18,7 @@
 struct ball balls[BALL_NUM];
 
 // テーブル
-struct table table = {0, NULL, collideCircle};
+struct table table = {0, NULL, 10, collideCircle, 0};
 
 int main(int argc, char *argv[]) {
     // 初期化
@@ -92,6 +92,8 @@ void Timer(int value) {
 
 // マウスクリック
 void Mouse(int b, int s, int x, int y) {
+    int i;
+    int moving = 0;
     struct vector point;
     int w = glutGet(GLUT_WINDOW_WIDTH);
     int h = glutGet(GLUT_WINDOW_HEIGHT);
@@ -105,7 +107,14 @@ void Mouse(int b, int s, int x, int y) {
     else
         set(&point, ((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
 
-    if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN)
+    for (i = 0; i < BALL_NUM; i++) {
+        if (!isZero(balls[i].v)) {
+            moving = 1;
+            break;
+        }
+    }
+
+    if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN && !moving)
         balls[0].v = split(minus(point, balls[0].p), 20);
 }
 

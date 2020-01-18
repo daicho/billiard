@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <float.h>
 
 #include "vector.h"
 
@@ -97,6 +98,11 @@ double dist(struct vector a, struct vector b) {
 // 内積
 double inner(struct vector a, struct vector b) {
     return a.x * b.x + a.y * b.y;
+}
+
+// ゼロベクトルか
+int isZero(struct vector a) {
+    return mag(a) <= DBL_EPSILON;
 }
 
 // ベクトルの内容を表示
