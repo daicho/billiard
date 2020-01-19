@@ -9,12 +9,14 @@
 #include "vector.h"
 #include "shape.h"
 
-#define FPS      60     // フレームレート
-#define ASPECT   2      // アスペクト比 (幅/高さ)
-#define FRICTION 0.0003 // 摩擦
-#define BALL_R   0.0393 // ボールの半径
-#define TABLE_W  1.75   // テーブルの幅
-#define TABLE_H  0.875  // テーブルの高さ
+#define FPS       60     // フレームレート
+#define ASPECT    2      // アスペクト比 (幅/高さ)
+#define BALL_R    0.0393 // ボールの半径
+#define FRICTION  0.0003 // 摩擦
+#define WALL_LOSS 0.8    // 壁衝突時の速度損失
+#define BALL_LOSS 0.95   // ボール衝突時の速度損失
+#define TABLE_W   1.75   // テーブルの幅
+#define TABLE_H   0.875  // テーブルの高さ
 
 // ボール
 struct ball balls[BALL_NUM];
@@ -48,6 +50,10 @@ int main(int argc, char *argv[]) {
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
+    // 陰影を有効化
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
     // 画像読み込み
     table.img = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
@@ -69,8 +75,10 @@ int main(int argc, char *argv[]) {
 // 画面描画
 void Display(void) {
     int i;
+    GLfloat lightPos[4] = {0.0, 0.0, -10.0, 1.0};
 
     glClear(GL_COLOR_BUFFER_BIT);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
     putSprite(table.img, 0, 0, ASPECT * 2, 2);
 
@@ -146,16 +154,16 @@ void init(void) {
     struct vector p1 = {TABLE_W / 2, 0}; // 1番玉の位置
     double r = BALL_R + 0.0001;   // ボールの間隔
 
-    initBall(&balls[0], 0, -TABLE_W / 2, 0, BALL_R);
-    initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
-    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
-    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
-    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R);
-    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
-    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
-    initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R);
-    initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R);
-    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[0], 0, -TABLE_W / 2, 0, BALL_R, 1.0, 1.0, 1.0, 1.0);
+    initBall(&balls[1], 1, p1.x, p1.y, BALL_R, 1.0, 1.0, 0.0, 1.0);
+    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R, 0.0, 0.0, 1.0, 1.0);
+    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R, 0.8, 0.0, 0.0, 1.0);
+    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R, 0.5, 0.0, 0.5, 1.0);
+    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R, 1.0, 0.5, 0.0, 1.0);
+    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R, 0.0, 0.5, 0.0, 1.0);
+    initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R, 0.5, 0.0, 0.0, 1.0);
+    initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R, 0.1, 0.1, 0.1, 1.0);
+    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R, 1.0, 1.0, 0.0, 1.0);
 }
 
 // 更新
@@ -207,7 +215,9 @@ void update(void) {
                 // 衝突後の速度を決定
                 temp = times(dir_p, -inner(dir_p, dir_v));
                 add(&balls[i].v, temp);
+                mult(&balls[i].v, BALL_LOSS);
                 sub(&balls[j].v, temp);
+                mult(&balls[j].v, BALL_LOSS);
             }
         }
     }
@@ -217,19 +227,24 @@ void update(void) {
 }
 
 // ball構造体を初期化
-void initBall(struct ball *ball, int num, double px, double py, double r) {
+void initBall(struct ball *ball, int num, double px, double py, double r, GLfloat colR, GLfloat colG, GLfloat colB, GLfloat colA) {
     ball->num = num;
     ball->exist = 1;
     set(&ball->p, px, py);
     ball->v = ZERO;
     ball->r = r;
+    ball->color[0] = colR;
+    ball->color[1] = colG;
+    ball->color[2] = colB;
+    ball->color[3] = colA;
 }
 
 // ボールを描画
 void drawBall(struct ball ball) {
-    glColor3d(1.0, 1.0, 1.0);
+    // glColor3dv(ball.color);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, ball.color);
     glPushMatrix();
-    glTranslated(ball.p.x, ball.p.y, -ball.r * 2);
+    glTranslated(ball.p.x, ball.p.y, ball.r * 2);
     glutSolidSphere(ball.r, 20, 20);
     glPopMatrix();
 }
@@ -243,22 +258,22 @@ void collideSquare(void) {
 
         if (balls[i].p.x > TABLE_W - balls[i].r) {
             balls[i].p.x = TABLE_W - balls[i].r;
-            balls[i].v.x *= -1;
+            balls[i].v.x *= -WALL_LOSS;
         }
 
         if (balls[i].p.x < -TABLE_W + balls[i].r) {
             balls[i].p.x = -TABLE_W + balls[i].r;
-            balls[i].v.x *= -1;
+            balls[i].v.x *= -WALL_LOSS;
         }
 
         if (balls[i].p.y > TABLE_H - balls[i].r) {
             balls[i].p.y = TABLE_H - balls[i].r;
-            balls[i].v.y *= -1;
+            balls[i].v.y *= -WALL_LOSS;
         }
 
         if (balls[i].p.y < -TABLE_H + balls[i].r) {
             balls[i].p.y = -TABLE_H + balls[i].r;
-            balls[i].v.y *= -1;
+            balls[i].v.y *= -WALL_LOSS;
         }
     }
 }
@@ -274,6 +289,7 @@ void collideCircle(void) {
             normal(&balls[i].p);
             mult(&balls[i].p, 1 - balls[i].r);
             rotate(&balls[i].v, M_PI - (angle(balls[i].v) - angle(balls[i].p)) * 2);
+            mult(&balls[i].v, WALL_LOSS);
         }
     }
 }

@@ -10,11 +10,12 @@
 
 // ボール
 struct ball {
-    int num;         // 番号 (0:白玉)
-    int exist;       // 存在しているか
-    struct vector p; // 位置
-    struct vector v; // 速度
-    double r;        // 半径
+    int num;           // 番号 (0:白玉)
+    int exist;         // 存在しているか
+    struct vector p;   // 位置
+    struct vector v;   // 速度
+    double r;          // 半径
+    GLfloat color[4]; // 色
 };
 
 // テーブル
@@ -35,7 +36,7 @@ void Motion(int, int);
 
 void init(void);
 void update(void);
-void initBall(struct ball *, int, double, double, double);
+void initBall(struct ball *, int, double, double, double, GLfloat, GLfloat, GLfloat, GLfloat);
 void drawBall(struct ball);
 
 void collideSquare(void);
