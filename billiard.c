@@ -56,6 +56,9 @@ int main(int argc, char *argv[]) {
     // 陰影を有効化
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
     // 画像読み込み
     table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
@@ -81,9 +84,9 @@ int main(int argc, char *argv[]) {
 // 画面描画
 void Display(void) {
     int i;
-    GLfloat lightPos[4] = {0.0, 0.0, -10.0, 1.0};
+    GLfloat lightPos[4] = {0.0, 0.0, 10.0, 1.0};
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
     putSprite(table.image, 0, 0, ASPECT * 2, 2);
@@ -244,8 +247,7 @@ void initBall(struct ball *ball, int num, double px, double py, double r) {
 
 // ボールを描画
 void drawBall(struct ball ball) {
-    GLUquadricObj* sphere;
-    sphere = gluNewQuadric();
+    GLUquadricObj* sphere = gluNewQuadric();
     gluQuadricDrawStyle(sphere, GLU_FILL);
     gluQuadricNormals(sphere, GLU_SMOOTH);
     gluQuadricTexture(sphere, GL_TRUE);
@@ -255,9 +257,8 @@ void drawBall(struct ball ball) {
 
     glPushMatrix();
     glTranslated(ball.p.x, ball.p.y, ball.r * 2);
-    // glRotated(1, ball.angle.y, -ball.angle.x, 0);
-    glRotated(ball.angle.x, 0, -1, 0);
-    glRotated(ball.angle.y, 1, 0, 0);
+    glRotated(ball.angle.x, 0, 1, 0);
+    glRotated(ball.angle.y, -1, 0, 0);
     gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
 
