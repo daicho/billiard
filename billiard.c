@@ -32,6 +32,7 @@ struct vector pockets[6] = {
 };
 
 struct table table = {6, pockets, 0.0896, collideSquare};
+double cnt = 0;
 
 int main(int argc, char *argv[]) {
     int i;
@@ -47,11 +48,6 @@ int main(int argc, char *argv[]) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-    glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-    glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-    glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
 
     // 線のアンチエイリアスを有効化
     glEnable(GL_LINE_SMOOTH);
@@ -147,7 +143,7 @@ void Mouse(int b, int s, int x, int y) {
         }
     }
 
-    if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN && !moving)
+    if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN/* && !moving*/)
         balls[0].v = split(minus(point, balls[0].p), 20);
 }
 
@@ -185,6 +181,7 @@ void update(void) {
         if (!balls[i].exist) continue;
 
         add(&balls[i].p, balls[i].v);
+        add(&balls[i].angle, times(split(balls[i].v, 2 * M_PI * balls[i].r), 180));
 
         if (mag(balls[i].v) <= 0.001)
             balls[i].v = ZERO;
@@ -254,23 +251,16 @@ void drawBall(struct ball ball) {
     gluQuadricTexture(sphere, GL_TRUE);
 
     glEnable(GL_TEXTURE_2D);
-    // glEnable(GL_TEXTURE_GEN_S);
-    // glEnable(GL_TEXTURE_GEN_T);
-    // glEnable(GL_TEXTURE_GEN_Q);
-    // glEnable(GL_TEXTURE_GEN_R);
-
     glBindTexture(GL_TEXTURE_2D, ball.image);
 
     glPushMatrix();
     glTranslated(ball.p.x, ball.p.y, ball.r * 2);
-    glRotated(-90, 0, 1, 0);
+    // glRotated(1, ball.angle.y, -ball.angle.x, 0);
+    glRotated(ball.angle.x, 0, -1, 0);
+    glRotated(ball.angle.y, 1, 0, 0);
     gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
 
-    // glDisable(GL_TEXTURE_GEN_S);
-    // glDisable(GL_TEXTURE_GEN_T);
-    // glDisable(GL_TEXTURE_GEN_Q);
-    // glDisable(GL_TEXTURE_GEN_R);
     glDisable(GL_TEXTURE_2D);
 }
 
@@ -324,7 +314,7 @@ void pocket(void) {
     int i, j;
 
     for (i = 0; i < BALL_NUM; i++) {
-        if (!balls[i].exist) continue;
+        if (i == 0 || !balls[i].exist) continue;
 
         for (j = 0; j < table.pocket_num; j++) {
             if (dist(balls[i].p, table.pockets[j]) < table.pocket_r) {
