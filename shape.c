@@ -26,11 +26,7 @@ void drawCircle(double x, double y, double r) {
 // w, h : サイズ
 // pngInfo : 画像情報
 void putSprite(GLuint num, double x, double y, double w, double h) {
-    GLdouble color[4];
-
-    // 現在の色を保存
-    glGetDoublev(GL_CURRENT_COLOR, color);
-
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, num);
     glColor4d(1.0, 1.0, 1.0, 1.0);
@@ -50,6 +46,5 @@ void putSprite(GLuint num, double x, double y, double w, double h) {
     glVertex2d(x + w / 2, y + h / 2);
 
     glEnd();
-    glColor3dv(color);
     glDisable(GL_TEXTURE_2D);
 }

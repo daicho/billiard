@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
     // 混合処理を有効化
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
     // 線のアンチエイリアスを有効化
     glEnable(GL_LINE_SMOOTH);
@@ -56,6 +55,7 @@ int main(int argc, char *argv[]) {
     // 陰影を有効化
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+    glEnable(GL_LIGHT1);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -63,8 +63,11 @@ int main(int argc, char *argv[]) {
     // 画像読み込み
     table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
-    for (i = 0; i < BALL_NUM; i++)
-        balls[i].image = pngBind("images/1.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    for (i = 0; i < BALL_NUM; i++) {
+        char fileName[32];
+        sprintf(fileName, "images/%d.png", i);
+        balls[i].image = pngBind(fileName, PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    }
 
     // コールバック関数登録
     glutDisplayFunc(Display);
@@ -84,10 +87,14 @@ int main(int argc, char *argv[]) {
 // 画面描画
 void Display(void) {
     int i;
-    GLfloat lightPos[4] = {0.0, 0.0, 10.0, 1.0};
+    GLfloat lightPos[2][4] = {
+        {-1.0, 0.0, 10.0, 1.0},
+        {1.0, 0.0, 10.0, 1.0}
+    };
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPos[0]);
+    glLightfv(GL_LIGHT1, GL_POSITION, lightPos[1]);
 
     putSprite(table.image, 0, 0, ASPECT * 2, 2);
 
@@ -252,13 +259,17 @@ void drawBall(struct ball ball) {
     gluQuadricNormals(sphere, GLU_SMOOTH);
     gluQuadricTexture(sphere, GL_TRUE);
 
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, ball.image);
 
     glPushMatrix();
     glTranslated(ball.p.x, ball.p.y, ball.r * 2);
-    glRotated(ball.angle.x, 0, 1, 0);
-    glRotated(ball.angle.y, -1, 0, 0);
+    glRotated(100, 0.6666666666666667, 0.33333333333333, 0);
+    // glRotated(45, 1, 0, 0);
+    // glRotated(ball.angle.x + 90, 0, 1, 0);
+    // glRotated(ball.angle.y, 0, 0, -1);
+    // glRotated(mag(ball.angle), ball.angle.y / mag(ball.angle), ball.angle.x / mag(ball.angle), 0);
     gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
 
