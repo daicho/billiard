@@ -10,21 +10,22 @@
 
 // ボール
 struct ball {
-    int num;           // 番号 (0:白玉)
-    int exist;         // 存在しているか
-    struct vector p;   // 位置
-    struct vector v;   // 速度
-    double r;          // 半径
-    GLfloat color[4]; // 色
+    int num;             // 番号 (0:白玉)
+    int exist;           // 存在しているか
+    struct vector p;     // 位置
+    struct vector v;     // 速度
+    struct vector angle; // 角度
+    double r;            // 半径
+    GLuint image;        // 画像
 };
 
 // テーブル
 struct table {
-    int pocket_num;
-    struct vector *pockets;
-    double pocket_r;
-    void (*collide)(void);
-    GLuint img;
+    int pocket_num;         // ポケットの数
+    struct vector *pockets; // ポケットの座標
+    double pocket_r;        // ポケットの半径
+    void (*collide)(void);  // 衝突判定を行う関数
+    GLuint image;           // 画像
 };
 
 void Display(void);
@@ -36,7 +37,7 @@ void Motion(int, int);
 
 void init(void);
 void update(void);
-void initBall(struct ball *, int, double, double, double, GLfloat, GLfloat, GLfloat, GLfloat);
+void initBall(struct ball *, int, double, double, double);
 void drawBall(struct ball);
 
 void collideSquare(void);

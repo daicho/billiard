@@ -34,6 +34,8 @@ struct vector pockets[6] = {
 struct table table = {6, pockets, 0.0896, collideSquare};
 
 int main(int argc, char *argv[]) {
+    int i;
+
     // 初期化
     glutInit(&argc, argv);
     glutInitWindowSize(720, 360);
@@ -46,6 +48,11 @@ int main(int argc, char *argv[]) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
+    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+    glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+    glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+    glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+
     // 線のアンチエイリアスを有効化
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
@@ -55,7 +62,10 @@ int main(int argc, char *argv[]) {
     glEnable(GL_LIGHT0);
 
     // 画像読み込み
-    table.img = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+
+    for (i = 0; i < BALL_NUM; i++)
+        balls[i].image = pngBind("images/1.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
     // コールバック関数登録
     glutDisplayFunc(Display);
@@ -80,7 +90,7 @@ void Display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
-    putSprite(table.img, 0, 0, ASPECT * 2, 2);
+    putSprite(table.image, 0, 0, ASPECT * 2, 2);
 
     for (i = 0; i < BALL_NUM; i++) {
         if (balls[i].exist)
@@ -154,16 +164,16 @@ void init(void) {
     struct vector p1 = {TABLE_W / 2, 0}; // 1番玉の位置
     double r = BALL_R + 0.0001;   // ボールの間隔
 
-    initBall(&balls[0], 0, -TABLE_W / 2, 0, BALL_R, 1.0, 1.0, 1.0, 1.0);
-    initBall(&balls[1], 1, p1.x, p1.y, BALL_R, 1.0, 1.0, 0.0, 1.0);
-    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R, 0.0, 0.0, 1.0, 1.0);
-    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R, 0.8, 0.0, 0.0, 1.0);
-    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R, 0.5, 0.0, 0.5, 1.0);
-    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R, 1.0, 0.5, 0.0, 1.0);
-    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R, 0.0, 0.5, 0.0, 1.0);
-    initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R, 0.5, 0.0, 0.0, 1.0);
-    initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R, 0.1, 0.1, 0.1, 1.0);
-    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R, 1.0, 1.0, 0.0, 1.0);
+    initBall(&balls[0], 0, -TABLE_W / 2, 0, BALL_R);
+    initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
+    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
+    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R);
+    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
+    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R);
+    initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
 }
 
 // 更新
@@ -227,26 +237,41 @@ void update(void) {
 }
 
 // ball構造体を初期化
-void initBall(struct ball *ball, int num, double px, double py, double r, GLfloat colR, GLfloat colG, GLfloat colB, GLfloat colA) {
+void initBall(struct ball *ball, int num, double px, double py, double r) {
     ball->num = num;
     ball->exist = 1;
     set(&ball->p, px, py);
     ball->v = ZERO;
     ball->r = r;
-    ball->color[0] = colR;
-    ball->color[1] = colG;
-    ball->color[2] = colB;
-    ball->color[3] = colA;
 }
 
 // ボールを描画
 void drawBall(struct ball ball) {
-    // glColor3dv(ball.color);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, ball.color);
+    GLUquadricObj* sphere;
+    sphere = gluNewQuadric();
+    gluQuadricDrawStyle(sphere, GLU_FILL);
+    gluQuadricNormals(sphere, GLU_SMOOTH);
+    gluQuadricTexture(sphere, GL_TRUE);
+
+    glEnable(GL_TEXTURE_2D);
+    // glEnable(GL_TEXTURE_GEN_S);
+    // glEnable(GL_TEXTURE_GEN_T);
+    // glEnable(GL_TEXTURE_GEN_Q);
+    // glEnable(GL_TEXTURE_GEN_R);
+
+    glBindTexture(GL_TEXTURE_2D, ball.image);
+
     glPushMatrix();
     glTranslated(ball.p.x, ball.p.y, ball.r * 2);
-    glutSolidSphere(ball.r, 20, 20);
+    glRotated(-90, 0, 1, 0);
+    gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
+
+    // glDisable(GL_TEXTURE_GEN_S);
+    // glDisable(GL_TEXTURE_GEN_T);
+    // glDisable(GL_TEXTURE_GEN_Q);
+    // glDisable(GL_TEXTURE_GEN_R);
+    glDisable(GL_TEXTURE_2D);
 }
 
 // 四角いテーブルの衝突判定
