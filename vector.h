@@ -29,7 +29,7 @@ double dist(struct vector, struct vector);
 double inner(struct vector, struct vector);
 int isZero(struct vector);
 
-void show(struct vector);
+void printVector(struct vector);
 
 extern const struct vector ZERO;
 

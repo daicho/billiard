@@ -106,6 +106,6 @@ int isZero(struct vector a) {
 }
 
 // ベクトルの内容を表示
-void show(struct vector a) {
+void printVector(struct vector a) {
     printf("(%f, %f)\n", a.x, a.y);
 }

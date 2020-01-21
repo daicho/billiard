@@ -18,6 +18,9 @@
 #define TABLE_W   1.75   // テーブルの幅
 #define TABLE_H   0.875  // テーブルの高さ
 
+// radをdegに変換
+#define degree(rad) (rad / M_PI * 180)
+
 // ボール
 struct ball balls[BALL_NUM];
 
@@ -68,6 +71,7 @@ int main(int argc, char *argv[]) {
         sprintf(fileName, "images/%d.png", i);
         balls[i].image = pngBind(fileName, PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     }
+    balls[0].image = pngBind("images/9.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
     // コールバック関数登録
     glutDisplayFunc(Display);
@@ -191,7 +195,7 @@ void update(void) {
         if (!balls[i].exist) continue;
 
         add(&balls[i].p, balls[i].v);
-        add(&balls[i].angle, times(split(balls[i].v, 2 * M_PI * balls[i].r), 180));
+        add(&balls[i].angle, split(balls[i].v, 2 * balls[i].r));
 
         if (mag(balls[i].v) <= 0.001)
             balls[i].v = ZERO;
@@ -264,12 +268,12 @@ void drawBall(struct ball ball) {
     glBindTexture(GL_TEXTURE_2D, ball.image);
 
     glPushMatrix();
-    glTranslated(ball.p.x, ball.p.y, ball.r * 2);
-    glRotated(100, 0.6666666666666667, 0.33333333333333, 0);
-    // glRotated(45, 1, 0, 0);
-    // glRotated(ball.angle.x + 90, 0, 1, 0);
-    // glRotated(ball.angle.y, 0, 0, -1);
-    // glRotated(mag(ball.angle), ball.angle.y / mag(ball.angle), ball.angle.x / mag(ball.angle), 0);
+    glTranslated(ball.p.x, ball.p.y, ball.r);
+    ball.angle.x = M_PI / 2;
+    ball.angle.y = M_PI / 2;
+    struct vector tempA = times(vector(cos(ball.angle.y), sin(ball.angle.y)), ball.angle.x);
+    struct vector tempB = times(vector(cos(-ball.angle.x), sin(-ball.angle.x)), ball.angle.y);
+    glRotated(degree(sqrt(pow(tempB.x, 2) + pow(tempA.x, 2) + pow(tempB.y + tempA.y, 2))), tempB.x, tempA.x, tempB.y + tempA.y);
     gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
 
