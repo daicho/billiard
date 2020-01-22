@@ -7,21 +7,15 @@ struct vector {
     double y;
 };
 
-void set(struct vector *, double, double);
 struct vector vector(double, double);
 
-void add(struct vector *, const struct vector);
-void sub(struct vector *, const struct vector);
-void mult(struct vector *, double);
-void divi(struct vector *, double);
+struct vector add(struct vector, struct vector);
+struct vector sub(struct vector, struct vector);
+struct vector mult(struct vector, double);
+struct vector divi(struct vector, double);
 
-struct vector plus(struct vector, struct vector);
-struct vector minus(struct vector, struct vector);
-struct vector times(struct vector, double);
-struct vector split(struct vector, double);
-
-void rotate(struct vector *, double);
-void normal(struct vector *);
+struct vector rotate(struct vector, double);
+struct vector normal(struct vector);
 
 double mag(struct vector);
 double angle(struct vector);

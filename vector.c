@@ -6,78 +6,40 @@
 
 const struct vector ZERO = {0, 0};
 
-// 値をセット
-void set(struct vector *a, double x, double y) {
-    a->x = x;
-    a->y = y;
-}
-
 // ベクトルを生成
 struct vector vector(double x, double y) {
     struct vector a = {x, y};
     return a;
 }
 
-// 加算 (再代入)
-void add(struct vector *a, const struct vector b) {
-    a->x += b.x;
-    a->y += b.y;
-}
-
-// 減算 (再代入)
-void sub(struct vector *a, const struct vector b) {
-    a->x -= b.x;
-    a->y -= b.y;
-}
-
-// 乗算 (再代入)
-void mult(struct vector *a, double r) {
-    a->x *= r;
-    a->y *= r;
-}
-
-// 除算 (再代入)
-void divi(struct vector *a, double r) {
-    a->x /= r;
-    a->y /= r;
-}
-
 // 加算
-struct vector plus(struct vector a, const struct vector b) {
-    struct vector c = a;
-    add(&c, b);
-    return c;
+struct vector add(struct vector a, const struct vector b) {
+    return vector(a.x + b.x, a.y + b.y);
 }
 
 // 減算
-struct vector minus(struct vector a, const struct vector b) {
-    struct vector c = a;
-    sub(&c, b);
-    return c;
+struct vector sub(struct vector a, const struct vector b) {
+    return vector(a.x - b.x, a.y - b.y);
 }
 
 // 乗算
-struct vector times(struct vector a, double r) {
-    struct vector c = a;
-    mult(&c, r);
-    return c;
+struct vector mult(struct vector a, double r) {
+    return vector(a.x * r, a.y * r);
 }
 
 // 除算
-struct vector split(struct vector a, double r) {
-    struct vector c = a;
-    divi(&c, r);
-    return c;
+struct vector divi(struct vector a, double r) {
+    return vector(a.x / r, a.y / r);
 }
 
 // 回転
-void rotate(struct vector *a, double r) {
-    set(a, a->x * cos(r) - a->y * sin(r), a->x * sin(r) + a->y * cos(r));
+struct vector rotate(struct vector a, double r) {
+    return vector(a.x * cos(r) - a.y * sin(r), a.x * sin(r) + a.y * cos(r));
 }
 
 // 正規化
-void normal(struct vector *a) {
-    divi(a, mag(*a));
+struct vector normal(struct vector a) {
+    return divi(a, mag(a));
 }
 
 // 大きさ
@@ -92,7 +54,7 @@ double angle(struct vector a) {
 
 // 距離
 double dist(struct vector a, struct vector b) {
-    return mag(minus(a, b));
+    return mag(sub(a, b));
 }
 
 // 内積

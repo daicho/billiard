@@ -146,9 +146,9 @@ void Mouse(int b, int s, int x, int y) {
 
     // マウスの座標を描画時の座標系に変換
     if (ratio > ASPECT)
-        set(&point, ((double)x / w - 0.5) * 2 * ratio, ((double)y / h - 0.5) * -2);
+        point = vector(((double)x / w - 0.5) * 2 * ratio, ((double)y / h - 0.5) * -2);
     else
-        set(&point, ((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
+        point = vector(((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
 
     for (i = 0; i < BALL_NUM; i++) {
         if (!isZero(balls[i].v)) {
@@ -158,7 +158,7 @@ void Mouse(int b, int s, int x, int y) {
     }
 
     if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN/* && !moving*/)
-        balls[0].v = split(minus(point, balls[0].p), 20);
+        balls[0].v = divi(sub(point, balls[0].p), 20);
 }
 
 // マウス移動
@@ -194,13 +194,13 @@ void update(void) {
     for (i = 0; i < BALL_NUM; i++) {
         if (!balls[i].exist) continue;
 
-        add(&balls[i].p, balls[i].v);
-        add(&balls[i].angle, split(balls[i].v, 2 * balls[i].r));
+        balls[i].p = add(balls[i].p, balls[i].v);
+        balls[i].angle = add(balls[i].angle, divi(balls[i].v, 2 * balls[i].r));
 
         if (mag(balls[i].v) <= 0.001)
             balls[i].v = ZERO;
         else
-            mult(&balls[i].v, 1 - FRICTION / mag(balls[i].v));
+            balls[i].v = mult(balls[i].v, 1 - FRICTION / mag(balls[i].v));
     }
 
     // ポケット判定
@@ -218,27 +218,24 @@ void update(void) {
                 double dist;
 
                 // ボールの重なりを修正
-                dir_p = minus(balls[i].p, balls[j].p);
+                dir_p = sub(balls[i].p, balls[j].p);
                 dist = mag(dir_p);
-                normal(&dir_p);
+                dir_p = normal(dir_p);
 
-                temp = times(dir_p, (balls[i].r + balls[j].r - dist) / 2);
-                add(&balls[i].p, temp);
-                sub(&balls[j].p, temp);
+                temp = mult(dir_p, (balls[i].r + balls[j].r - dist) / 2);
+                balls[i].p = add(balls[i].p, temp);
+                balls[j].p = sub(balls[j].p, temp);
 
                 // 2つのボールの位置の単位ベクトル
-                dir_p = minus(balls[i].p, balls[j].p);
-                normal(&dir_p);
+                dir_p = normal(sub(balls[i].p, balls[j].p));
 
                 // 2つのボールの相対速度
-                dir_v = minus(balls[i].v, balls[j].v);
+                dir_v = sub(balls[i].v, balls[j].v);
 
                 // 衝突後の速度を決定
-                temp = times(dir_p, -inner(dir_p, dir_v));
-                add(&balls[i].v, temp);
-                mult(&balls[i].v, BALL_LOSS);
-                sub(&balls[j].v, temp);
-                mult(&balls[j].v, BALL_LOSS);
+                temp = mult(dir_p, -inner(dir_p, dir_v));
+                balls[i].v = mult(add(balls[i].v, temp), BALL_LOSS);
+                balls[j].v = mult(sub(balls[j].v, temp), BALL_LOSS);
             }
         }
     }
@@ -251,7 +248,7 @@ void update(void) {
 void initBall(struct ball *ball, int num, double px, double py, double r) {
     ball->num = num;
     ball->exist = 1;
-    set(&ball->p, px, py);
+    ball->p = vector(px, py);
     ball->v = ZERO;
     ball->r = r;
 }
@@ -271,8 +268,8 @@ void drawBall(struct ball ball) {
     glTranslated(ball.p.x, ball.p.y, ball.r);
     ball.angle.x = M_PI / 2;
     ball.angle.y = M_PI / 2;
-    struct vector tempA = times(vector(cos(ball.angle.y), sin(ball.angle.y)), ball.angle.x);
-    struct vector tempB = times(vector(cos(-ball.angle.x), sin(-ball.angle.x)), ball.angle.y);
+    struct vector tempA = mult(vector(cos(ball.angle.y), sin(ball.angle.y)), ball.angle.x);
+    struct vector tempB = mult(vector(cos(-ball.angle.x), sin(-ball.angle.x)), ball.angle.y);
     glRotated(degree(sqrt(pow(tempB.x, 2) + pow(tempA.x, 2) + pow(tempB.y + tempA.y, 2))), tempB.x, tempA.x, tempB.y + tempA.y);
     gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
@@ -317,10 +314,8 @@ void collideCircle(void) {
         if (!balls[i].exist) continue;
 
         if (mag(balls[i].p) > 1 - balls[i].r) {
-            normal(&balls[i].p);
-            mult(&balls[i].p, 1 - balls[i].r);
-            rotate(&balls[i].v, M_PI - (angle(balls[i].v) - angle(balls[i].p)) * 2);
-            mult(&balls[i].v, WALL_LOSS);
+            balls[i].p = mult(normal(balls[i].p), 1 - balls[i].r);
+            balls[i].v = mult(rotate(balls[i].v, M_PI - (angle(balls[i].v) - angle(balls[i].p)) * 2), WALL_LOSS);
         }
     }
 }
