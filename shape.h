@@ -2,6 +2,6 @@
 #define SHAPE_H
 
 void drawCircle(double, double, double);
-void putSprite(GLuint num, double x, double y, double w, double h);
+void putSprite(GLuint, double, double, double, double, double);
 
 #endif

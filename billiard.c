@@ -17,6 +17,8 @@
 #define BALL_LOSS 0.95   // ボール衝突時の速度損失
 #define TABLE_W   1.75   // テーブルの幅
 #define TABLE_H   0.875  // テーブルの高さ
+#define CUE_W     1.024  // キューの幅
+#define CUE_H     0.032  // キューの高さ
 
 // 角度を変換
 #define rad(deg) (rad * M_PI / 180.0)
@@ -36,7 +38,7 @@ struct vector pockets[6] = {
 };
 
 struct table table = {6, pockets, 0.0896, collideSquare};
-double cnt = 0;
+struct cue cue = {1, 0};
 
 int main(int argc, char *argv[]) {
     int i;
@@ -66,6 +68,7 @@ int main(int argc, char *argv[]) {
 
     // 画像読み込み
     table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    cue.image = pngBind("images/cue.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
     for (i = 0; i < BALL_NUM; i++) {
         char fileName[32];
@@ -79,7 +82,6 @@ int main(int argc, char *argv[]) {
     glutTimerFunc(1000.0 / FPS + 0.5, Timer, 0);
     glutMouseFunc(Mouse);
     glutPassiveMotionFunc(PassiveMotion);
-    glutMotionFunc(Motion);
 
     // メインループ開始
     init();
@@ -100,7 +102,15 @@ void Display(void) {
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos[0]);
     glLightfv(GL_LIGHT1, GL_POSITION, lightPos[1]);
 
-    putSprite(table.image, 0, 0, ASPECT * 2, 2);
+    putSprite(table.image, 0, 0, 0, ASPECT * 2, 2);
+
+    if (cue.exist) {
+        glPushMatrix();
+        glTranslated(balls[0].p.x, balls[0].p.y, 0);
+        glRotated(degree(cue.angle), 0, 0, 1);
+        putSprite(cue.image, balls[0].r + CUE_W / 2, 0, balls[0].r * 3, CUE_W, CUE_H);
+        glPopMatrix();
+    }
 
     for (i = 0; i < BALL_NUM; i++) {
         if (balls[i].exist)
@@ -163,10 +173,20 @@ void Mouse(int b, int s, int x, int y) {
 
 // マウス移動
 void PassiveMotion(int x, int y) {
-}
+    struct vector point;
+    int w = glutGet(GLUT_WINDOW_WIDTH);
+    int h = glutGet(GLUT_WINDOW_HEIGHT);
 
-// マウスドラッグ
-void Motion(int x, int y) {
+    // ウィンドウの縦横比
+    double ratio = (double)w / h;
+
+    // マウスの座標を描画時の座標系に変換
+    if (ratio > ASPECT)
+        point = vector(((double)x / w - 0.5) * 2 * ratio, ((double)y / h - 0.5) * -2);
+    else
+        point = vector(((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
+
+    cue.angle = angle(sub(point, balls[0].p)) + M_PI;
 }
 
 // 初期化
@@ -195,7 +215,7 @@ void update(void) {
         if (!balls[i].exist) continue;
 
         balls[i].p = add(balls[i].p, balls[i].v);
-        balls[i].angle = fmod(balls[i].angle + mag(balls[i].v) * 180 / balls[i].r / M_PI, 360);
+        balls[i].angle = fmod(balls[i].angle + mag(balls[i].v) / (2 * balls[i].r), 2 * M_PI);
 
         if (!isZero(balls[i].v))
             balls[i].dir = normal(balls[i].v);
@@ -271,7 +291,9 @@ void drawBall(struct ball ball) {
 
     glPushMatrix();
     glTranslated(ball.p.x, ball.p.y, ball.r);
-    glRotated(ball.angle, -ball.dir.y, ball.dir.x, 0);
+    glRotated(90, 0, 1, 0);
+    glRotated(90, 1, 0, 0);
+    glRotated(degree(ball.angle), 0, -ball.dir.y, -ball.dir.x);
     gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
 

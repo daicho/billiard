@@ -10,8 +10,8 @@
 
 // ボール
 struct ball {
-    int num;           // 番号 (0:白玉)
     int exist;         // 存在しているか
+    int num;           // 番号 (0:白玉)
     double r;          // 半径
     struct vector p;   // 位置
     struct vector v;   // 速度
@@ -29,12 +29,18 @@ struct table {
     GLuint image;           // 画像
 };
 
+// キュー
+struct cue {
+    int exist;    // 存在しているか
+    double angle; // 角度
+    GLuint image; // 画像
+};
+
 void Display(void);
 void Reshape(int, int);
 void Timer(int);
 void Mouse(int, int, int, int);
 void PassiveMotion(int, int);
-void Motion(int, int);
 
 void init(void);
 void update(void);
@@ -48,5 +54,6 @@ void pocket(void);
 extern struct ball balls[BALL_NUM];
 extern struct vector pockets[6];
 extern struct table table;
+extern struct cue cue;
 
 #endif

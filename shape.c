@@ -22,10 +22,9 @@ void drawCircle(double x, double y, double r) {
 
 // 画像を表示
 // num : 画像の番号
-// x, y : 座標
+// x, y, z : 座標
 // w, h : サイズ
-// pngInfo : 画像情報
-void putSprite(GLuint num, double x, double y, double w, double h) {
+void putSprite(GLuint num, double x, double y, double z, double w, double h) {
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, num);
@@ -34,16 +33,16 @@ void putSprite(GLuint num, double x, double y, double w, double h) {
     glBegin(GL_QUADS);
 
     glTexCoord2d(0, 0);
-    glVertex2d(x - w / 2, y + h / 2);
+    glVertex3d(x - w / 2, y + h / 2, z);
 
     glTexCoord2d(0, 1);
-    glVertex2d(x - w / 2, y - h / 2);
+    glVertex3d(x - w / 2, y - h / 2, z);
 
     glTexCoord2d(1, 1);
-    glVertex2d(x + w / 2, y - h / 2);
+    glVertex3d(x + w / 2, y - h / 2, z);
 
     glTexCoord2d(1, 0);
-    glVertex2d(x + w / 2, y + h / 2);
+    glVertex3d(x + w / 2, y + h / 2, z);
 
     glEnd();
     glDisable(GL_TEXTURE_2D);
