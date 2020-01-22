@@ -18,8 +18,9 @@
 #define TABLE_W   1.75   // テーブルの幅
 #define TABLE_H   0.875  // テーブルの高さ
 
-// radをdegに変換
-#define degree(rad) (rad / M_PI * 180)
+// 角度を変換
+#define rad(deg) (rad * M_PI / 180.0)
+#define degree(rad) (rad * 180.0 / M_PI)
 
 // ボール
 struct ball balls[BALL_NUM];
@@ -71,7 +72,6 @@ int main(int argc, char *argv[]) {
         sprintf(fileName, "images/%d.png", i);
         balls[i].image = pngBind(fileName, PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     }
-    balls[0].image = pngBind("images/9.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
     // コールバック関数登録
     glutDisplayFunc(Display);
@@ -195,7 +195,10 @@ void update(void) {
         if (!balls[i].exist) continue;
 
         balls[i].p = add(balls[i].p, balls[i].v);
-        balls[i].angle = add(balls[i].angle, divi(balls[i].v, 2 * balls[i].r));
+        balls[i].angle = fmod(balls[i].angle + mag(balls[i].v) * 180 / balls[i].r / M_PI, 360);
+
+        if (!isZero(balls[i].v))
+            balls[i].dir = normal(balls[i].v);
 
         if (mag(balls[i].v) <= 0.001)
             balls[i].v = ZERO;
@@ -248,9 +251,11 @@ void update(void) {
 void initBall(struct ball *ball, int num, double px, double py, double r) {
     ball->num = num;
     ball->exist = 1;
+    ball->r = r;
     ball->p = vector(px, py);
     ball->v = ZERO;
-    ball->r = r;
+    ball->dir = vector(1, 0);
+    ball->angle = 0;
 }
 
 // ボールを描画
@@ -266,11 +271,7 @@ void drawBall(struct ball ball) {
 
     glPushMatrix();
     glTranslated(ball.p.x, ball.p.y, ball.r);
-    ball.angle.x = M_PI / 2;
-    ball.angle.y = M_PI / 2;
-    struct vector tempA = mult(vector(cos(ball.angle.y), sin(ball.angle.y)), ball.angle.x);
-    struct vector tempB = mult(vector(cos(-ball.angle.x), sin(-ball.angle.x)), ball.angle.y);
-    glRotated(degree(sqrt(pow(tempB.x, 2) + pow(tempA.x, 2) + pow(tempB.y + tempA.y, 2))), tempB.x, tempA.x, tempB.y + tempA.y);
+    glRotated(ball.angle, -ball.dir.y, ball.dir.x, 0);
     gluSphere(sphere, ball.r, 32, 32);
     glPopMatrix();
 

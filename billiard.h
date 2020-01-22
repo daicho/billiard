@@ -10,13 +10,14 @@
 
 // ボール
 struct ball {
-    int num;             // 番号 (0:白玉)
-    int exist;           // 存在しているか
-    struct vector p;     // 位置
-    struct vector v;     // 速度
-    struct vector angle; // 角度
-    double r;            // 半径
-    GLuint image;        // 画像
+    int num;           // 番号 (0:白玉)
+    int exist;         // 存在しているか
+    double r;          // 半径
+    struct vector p;   // 位置
+    struct vector v;   // 速度
+    struct vector dir; // 進行方向
+    double angle;      // 角度
+    GLuint image;      // 画像
 };
 
 // テーブル
