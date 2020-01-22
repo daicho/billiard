@@ -62,9 +62,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_LIGHT1);
-    glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
 
     // 画像読み込み
     table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
@@ -104,17 +102,17 @@ void Display(void) {
 
     putSprite(table.image, 0, 0, 0, ASPECT * 2, 2);
 
+    for (i = 0; i < BALL_NUM; i++) {
+        if (balls[i].exist)
+            drawBall(balls[i]);
+    }
+
     if (cue.exist) {
         glPushMatrix();
         glTranslated(balls[0].p.x, balls[0].p.y, 0);
         glRotated(degree(cue.angle), 0, 0, 1);
-        putSprite(cue.image, balls[0].r + CUE_W / 2, 0, balls[0].r * 3, CUE_W, CUE_H);
+        putSprite(cue.image, balls[0].r + CUE_W / 2, 0, balls[0].r * 2, CUE_W, CUE_H);
         glPopMatrix();
-    }
-
-    for (i = 0; i < BALL_NUM; i++) {
-        if (balls[i].exist)
-            drawBall(balls[i]);
     }
 
     glFlush();
