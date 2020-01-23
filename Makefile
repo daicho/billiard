@@ -1,13 +1,13 @@
 TARGET = billiard.exe
 
-SRCS = billiard.c vector.c shape.c
+SRCS = billiard.c ball.c vector.c shape.c
 ICON = icon.ico
 
 ICON_RC = ${ICON:.ico=.rc}
 ICON_OBJ = ${ICON:.ico=.o}
 OBJS = ${SRCS:.c=.o} $(ICON_OBJ)
 
-HEADERS = billiard.h vector.h shape.h
+HEADERS = billiard.h ball.h vector.h shape.h
 
 CC = gcc
 CCFLAGS = -Wall -I/usr/include/opengl
