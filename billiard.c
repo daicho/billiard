@@ -38,6 +38,7 @@ struct vector pockets[6] = {
 struct table table = {6, pockets, 0.0896, collideSquare};
 struct cue cue = {1, {0, 0}, 0};
 int pulling = 0;
+double power = 0;
 
 int main(int argc, char *argv[]) {
     int i;
@@ -103,6 +104,9 @@ void init(void) {
     initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R);
     initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R);
     initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
+
+    // キューを配置
+    cue.p = balls[0].p;
 }
 
 // 更新
@@ -133,6 +137,25 @@ void update(void) {
         if (balls[i].exist)
             pocket(table, &balls[i]);
     }
+
+    // キューを引く
+    if (pulling) {
+        power += 0.002;
+        if (power > 0.15)
+            power = 0.15;
+    }
+}
+
+// ボールが動いているか
+int movingBall(void) {
+    int i;
+
+    for (i = 0; i < BALL_NUM; i++) {
+        if (!isZero(balls[i].v))
+            return 1;
+    }
+
+    return 0;
 }
 
 // 四角いテーブルの衝突判定
@@ -223,9 +246,9 @@ void Display(void) {
     // キュー
     if (cue.exist) {
         glPushMatrix();
-        glTranslated(balls[0].p.x, balls[0].p.y, 0);
-        glRotated(degree(cue.angle), 0, 0, 1);
-        putSprite(cue.image, balls[0].r + CUE_W / 2, 0, balls[0].r * 2, CUE_W, CUE_H);
+        glTranslated(cue.p.x, cue.p.y, 0);
+        glRotated(degree(cue.angle) + 180, 0, 0, 1);
+        putSprite(cue.image, balls[0].r + CUE_W / 2 + power * 2, 0, balls[0].r * 2, CUE_W, CUE_H);
         glPopMatrix();
     }
 
@@ -257,28 +280,19 @@ void Timer(int value) {
 
 // マウスクリック
 void Mouse(int b, int s, int x, int y) {
-    int i;
     struct vector point = convertPoint(x, y);
 
     if (b == GLUT_LEFT_BUTTON) {
-        // 動いているボールがあるか
-        int moving = 0;
-
-        for (i = 0; i < BALL_NUM; i++) {
-            if (!isZero(balls[i].v)) {
-                moving = 1;
-                break;
-            }
-        }
-
-        if (s == GLUT_DOWN && !moving) {
+        if (s == GLUT_DOWN && !movingBall()) {
             pulling = 1;
+            cue.angle = angle(sub(point, balls[0].p));
+            cue.p = balls[0].p;
         }
 
-        if (s == GLUT_UP) {
-            if (pulling) {
-                balls[0].v = divi(sub(point, balls[0].p), 20);
-            }
+        if (s == GLUT_UP && pulling) {
+            pulling = 0;
+            balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), power);
+            power = 0;
         }
     }
 }
@@ -286,5 +300,9 @@ void Mouse(int b, int s, int x, int y) {
 // マウス移動
 void PassiveMotion(int x, int y) {
     struct vector point = convertPoint(x, y); 
-    cue.angle = angle(sub(point, balls[0].p)) + M_PI;
+
+    if (!movingBall()) {
+        cue.angle = angle(sub(point, balls[0].p));
+        cue.p = balls[0].p;
+    }
 }

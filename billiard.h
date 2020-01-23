@@ -8,7 +8,7 @@
 #include "vector.h"
 
 #define WALL_LOSS 0.8 // 壁衝突時の速度損失
-#define BALL_NUM 10   // ボールの数
+#define BALL_NUM  10  // ボールの数
 
 // テーブル
 struct table {
@@ -29,8 +29,7 @@ struct cue {
 
 void init(void);
 void update(void);
-void initBall(struct ball *, int, double, double, double);
-void drawBall(struct ball);
+int movingBall(void);
 
 void collideSquare(struct ball *);
 void collideCircle(struct ball *);
@@ -49,5 +48,6 @@ extern struct vector pockets[6];
 extern struct table table;
 extern struct cue cue;
 extern int pulling;
+extern double power;
 
 #endif
