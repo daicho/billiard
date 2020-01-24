@@ -37,6 +37,7 @@ struct vector pockets[6] = {
 
 struct table table = {6, pockets, 0.0896, collideSquare};
 struct cue cue = {1, {0, 0}, 0};
+struct vector mouse = {0, 0};
 int pulling = 0;
 double power = 0;
 
@@ -223,6 +224,8 @@ struct vector convertPoint(int x, int y) {
 // 画面描画
 void Display(void) {
     int i;
+    int target;
+
     GLfloat lightPos[2][4] = {
         {-1.0, 0.0, 10.0, 1.0},
         {1.0, 0.0, 10.0, 1.0}
@@ -236,6 +239,28 @@ void Display(void) {
 
     // テーブル
     putSprite(table.image, 0, 0, 0, ASPECT * 2, 2);
+
+    // 補助線
+    for (i = 1; i < BALL_NUM; i++) {
+        double slope;
+        double touch;
+
+        if (!balls[i].exist || !cue.exist) continue;
+
+        slope = tan(cue.angle);
+        touch = fabs(slope * (balls[i].p.x - cue.p.x) - balls[i].p.y + cue.p.y) / mag(vector(slope, 1));
+
+        if (touch < balls[i].r) {
+            if (!target || dist(cue.p, balls[i].p) < dist(cue.p, balls[target].p))
+                target = i;
+        }
+    }
+
+    glColor4d(1.0, 1.0, 1.0, 0.5);
+    glBegin(GL_LINES);
+    glVertex2d(cue.p.x, cue.p.y);
+    glVertex2d(cue.p.x + cos(cue.angle) * dist(cue.p, balls[target].p), cue.p.y + sin(cue.angle) * dist(cue.p, balls[target].p));
+    glEnd();
 
     // ボール
     for (i = 0; i < BALL_NUM; i++) {
@@ -280,12 +305,12 @@ void Timer(int value) {
 
 // マウスクリック
 void Mouse(int b, int s, int x, int y) {
-    struct vector point = convertPoint(x, y);
+    mouse = convertPoint(x, y);
 
     if (b == GLUT_LEFT_BUTTON) {
         if (s == GLUT_DOWN && !movingBall()) {
             pulling = 1;
-            cue.angle = angle(sub(point, balls[0].p));
+            cue.angle = angle(sub(mouse, balls[0].p));
             cue.p = balls[0].p;
         }
 
@@ -299,10 +324,10 @@ void Mouse(int b, int s, int x, int y) {
 
 // マウス移動
 void PassiveMotion(int x, int y) {
-    struct vector point = convertPoint(x, y); 
+    mouse = convertPoint(x, y); 
 
     if (!movingBall()) {
-        cue.angle = angle(sub(point, balls[0].p));
+        cue.angle = angle(sub(mouse, balls[0].p));
         cue.p = balls[0].p;
     }
 }

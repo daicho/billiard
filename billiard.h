@@ -47,6 +47,7 @@ extern struct ball balls[BALL_NUM];
 extern struct vector pockets[6];
 extern struct table table;
 extern struct cue cue;
+extern struct vector mouse;
 extern int pulling;
 extern double power;
 
