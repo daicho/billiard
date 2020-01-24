@@ -141,7 +141,7 @@ void update(void) {
 
     // キューを引く
     if (pulling) {
-        power += 0.002;
+        power += 0.001;
         if (power > 0.15)
             power = 0.15;
     }
@@ -254,6 +254,7 @@ void Display(void) {
             double touch;
 
             if (!balls[i].exist || !cue.exist) continue;
+            if (cos(angle(sub(balls[i].p, cue.p)) - cue.angle) < 0) continue;
 
             slope = tan(cue.angle);
             touch = fabs(slope * (balls[i].p.x - cue.p.x) - balls[i].p.y + cue.p.y) / mag(vector(slope, 1));
@@ -273,10 +274,10 @@ void Display(void) {
         glBegin(GL_LINES);
         glColor3d(0.0, 0.0, 0.0);
         glVertex2d(0, 0);
-        glVertex2d(dist(cue.p, balls[target].p) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)) - balls[0].r, 0);
+        glVertex2d(dist(cue.p, balls[target].p) * cos(angle(sub(balls[target].p, cue.p)) - cue.angle) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)) - balls[0].r, 0);
         glEnd();
 
-        drawCircle(dist(cue.p, balls[target].p) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)), 0, balls[0].r);
+        drawCircle(dist(cue.p, balls[target].p) * cos(angle(sub(balls[target].p, cue.p)) - cue.angle) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)), 0, balls[0].r);
         glPopMatrix();
         glEnable(GL_LIGHTING);
     }

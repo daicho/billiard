@@ -52,6 +52,11 @@ double angle(struct vector a) {
     return atan2(a.y, a.x);
 }
 
+// 2つのベクトルのなす角度
+double angle2(struct vector a, struct vector b) {
+    return acos(inner(a, b) / (mag(a) * mag(b)));
+}
+
 // 距離
 double dist(struct vector a, struct vector b) {
     return mag(sub(a, b));
