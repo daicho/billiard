@@ -12,7 +12,7 @@
 
 #define FPS       60     // フレームレート
 #define ASPECT    2      // アスペクト比 (幅/高さ)
-#define BALL_R    0.0393 // ボールの半径
+#define BALL_R    0.04   // ボールの半径
 #define TABLE_W   1.75   // テーブルの幅
 #define TABLE_H   0.875  // テーブルの高さ
 #define CUE_W     1.024  // キューの幅
@@ -196,8 +196,14 @@ void pocket(struct table table, struct ball *ball) {
 
     for (i = 0; i < table.pocket_num; i++) {
         if (dist(ball->p, table.pockets[i]) < table.pocket_r) {
-            ball->exist = 0;
+            if (ball->num == 0) {
+                ball->p = vector(-TABLE_W / 2, 0);
+            } else {
+                ball->exist = 0;
+            }
+
             ball->v = ZERO;
+
             break;
         }
     }
@@ -224,7 +230,8 @@ struct vector convertPoint(int x, int y) {
 // 画面描画
 void Display(void) {
     int i;
-    int target;
+    int target = 0;
+    double touch_min = 0;
 
     GLfloat lightPos[2][4] = {
         {-1.0, 0.0, 10.0, 1.0},
@@ -240,27 +247,39 @@ void Display(void) {
     // テーブル
     putSprite(table.image, 0, 0, 0, ASPECT * 2, 2);
 
-    // 補助線
-    for (i = 1; i < BALL_NUM; i++) {
-        double slope;
-        double touch;
+    // 予測線
+    if (!movingBall()) {
+        for (i = 1; i < BALL_NUM; i++) {
+            double slope;
+            double touch;
 
-        if (!balls[i].exist || !cue.exist) continue;
+            if (!balls[i].exist || !cue.exist) continue;
 
-        slope = tan(cue.angle);
-        touch = fabs(slope * (balls[i].p.x - cue.p.x) - balls[i].p.y + cue.p.y) / mag(vector(slope, 1));
+            slope = tan(cue.angle);
+            touch = fabs(slope * (balls[i].p.x - cue.p.x) - balls[i].p.y + cue.p.y) / mag(vector(slope, 1));
 
-        if (touch < balls[i].r) {
-            if (!target || dist(cue.p, balls[i].p) < dist(cue.p, balls[target].p))
-                target = i;
+            if (touch < balls[0].r + balls[i].r) {
+                if (!target || dist(cue.p, balls[i].p) < dist(cue.p, balls[target].p)) {
+                    target = i;
+                    touch_min = touch;
+                }
+            }
         }
-    }
 
-    glColor4d(1.0, 1.0, 1.0, 0.5);
-    glBegin(GL_LINES);
-    glVertex2d(cue.p.x, cue.p.y);
-    glVertex2d(cue.p.x + cos(cue.angle) * dist(cue.p, balls[target].p), cue.p.y + sin(cue.angle) * dist(cue.p, balls[target].p));
-    glEnd();
+        glDisable(GL_LIGHTING);
+        glPushMatrix();
+        glTranslated(cue.p.x, cue.p.y, 0);
+        glRotated(degree(cue.angle), 0, 0, 1);
+        glBegin(GL_LINES);
+        glColor3d(0.0, 0.0, 0.0);
+        glVertex2d(0, 0);
+        glVertex2d(dist(cue.p, balls[target].p) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)) - balls[0].r, 0);
+        glEnd();
+
+        drawCircle(dist(cue.p, balls[target].p) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)), 0, balls[0].r);
+        glPopMatrix();
+        glEnable(GL_LIGHTING);
+    }
 
     // ボール
     for (i = 0; i < BALL_NUM; i++) {
