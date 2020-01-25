@@ -67,10 +67,15 @@ void collideBall(struct ball *ballA, struct ball *ballB) {
         struct vector dir_p, dir_v, temp;
 
         // ボールの重なりを修正
-        dir_p = sub(ballA->p, ballB->p);
-        temp = mult(normal(dir_p), (ballA->r + ballB->r - mag(dir_p)) / 2);
-        ballA->p = add(ballA->p, temp);
-        ballB->p = sub(ballB->p, temp);
+        while (dist(ballA->p, ballB->p) < ballA->r + ballB->r) {
+            ballA->p = sub(ballA->p, divi(ballA->v, 100));
+            ballB->p = sub(ballB->p, divi(ballB->v, 100));
+        }
+
+        // dir_p = sub(ballA->p, ballB->p);
+        // temp = mult(normal(dir_p), (ballA->r + ballB->r - mag(dir_p)) / 2);
+        // ballA->p = add(ballA->p, temp);
+        // ballB->p = sub(ballB->p, temp);
 
         // 2つのボールの相対位置と相対速度
         dir_p = sub(ballA->p, ballB->p);

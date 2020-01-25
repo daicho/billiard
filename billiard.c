@@ -231,7 +231,7 @@ struct vector convertPoint(int x, int y) {
 void Display(void) {
     int i;
     int target = 0;
-    double touch_min = 0;
+    double predict_min = 0;
 
     GLfloat lightPos[2][4] = {
         {-1.0, 0.0, 10.0, 1.0},
@@ -250,34 +250,38 @@ void Display(void) {
     // 予測線
     if (!movingBall()) {
         for (i = 1; i < BALL_NUM; i++) {
-            double slope;
             double touch;
+            double predict;
 
             if (!balls[i].exist || !cue.exist) continue;
-            if (cos(angle(sub(balls[i].p, cue.p)) - cue.angle) < 0) continue;
+            if (cos(angle(sub(balls[i].p, balls[0].p)) - cue.angle) < 0) continue;
 
-            slope = tan(cue.angle);
-            touch = fabs(slope * (balls[i].p.x - cue.p.x) - balls[i].p.y + cue.p.y) / mag(vector(slope, 1));
+            // 手玉の軌道上との距離を算出
+            touch = fabs(tan(cue.angle) * (balls[i].p.x - balls[0].p.x) - balls[i].p.y + balls[0].p.y) / mag(vector(tan(cue.angle), 1));
 
             if (touch < balls[0].r + balls[i].r) {
-                if (!target || dist(cue.p, balls[i].p) < dist(cue.p, balls[target].p)) {
+                // 衝突予想地点を算出
+                predict = dist(balls[0].p, balls[i].p) * cos(angle(sub(balls[i].p, balls[0].p)) - cue.angle) - sqrt(pow(balls[0].r + balls[i].r, 2) - pow(touch, 2));
+
+                if (!target || predict < predict_min) {
                     target = i;
-                    touch_min = touch;
+                    predict_min = predict;
                 }
             }
         }
 
+        // 予測線を描画
         glDisable(GL_LIGHTING);
         glPushMatrix();
-        glTranslated(cue.p.x, cue.p.y, 0);
+        glTranslated(balls[0].p.x, balls[0].p.y, 0);
         glRotated(degree(cue.angle), 0, 0, 1);
         glBegin(GL_LINES);
         glColor3d(0.0, 0.0, 0.0);
         glVertex2d(0, 0);
-        glVertex2d(dist(cue.p, balls[target].p) * cos(angle(sub(balls[target].p, cue.p)) - cue.angle) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)) - balls[0].r, 0);
+        glVertex2d(predict_min - balls[0].r, 0);
         glEnd();
 
-        drawCircle(dist(cue.p, balls[target].p) * cos(angle(sub(balls[target].p, cue.p)) - cue.angle) - sqrt(pow(balls[0].r + balls[target].r, 2) - pow(touch_min, 2)), 0, balls[0].r);
+        drawCircle(predict_min, 0, balls[0].r);
         glPopMatrix();
         glEnable(GL_LIGHTING);
     }
