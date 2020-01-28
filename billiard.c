@@ -10,16 +10,16 @@
 #include "vector.h"
 #include "shape.h"
 
-#define FPS       60     // フレームレート
-#define ASPECT    2      // アスペクト比 (幅/高さ)
-#define BALL_R    0.04   // ボールの半径
-#define TABLE_W   1.75   // テーブルの幅
-#define TABLE_H   0.875  // テーブルの高さ
-#define CUE_W     1.024  // キューの幅
-#define CUE_H     0.032  // キューの高さ
+#define FPS      60    // フレームレート
+#define ASPECT   2     // アスペクト比 (幅/高さ)
+#define BALL_R   0.04  // ボールの半径
+#define TABLE_W  1.75  // テーブルの幅
+#define TABLE_H  0.875 // テーブルの高さ
+#define CUE_W    1.024 // キューの幅
+#define CUE_H    0.032 // キューの高さ
 
 // 角度を変換
-#define rad(deg) (rad * M_PI / 180.0)
+#define radian(deg) (deg * M_PI / 180.0)
 #define degree(rad) (rad * 180.0 / M_PI)
 
 // ボール
@@ -113,6 +113,7 @@ void init(void) {
 // 更新
 void update(void) {
     int i, j;
+    int colliding;
 
     // 移動
     for (i = 0; i < BALL_NUM; i++) {
@@ -141,7 +142,7 @@ void update(void) {
 
     // キューを引く
     if (pulling) {
-        power += 0.001;
+        power += 0.1;
         if (power > 0.15)
             power = 0.15;
     }
