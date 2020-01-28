@@ -64,25 +64,36 @@ void drawBall(struct ball ball) {
 // ボール同士の衝突判定
 void collideBall(struct ball *ballA, struct ball *ballB) {
     if (dist(ballA->p, ballB->p) < ballA->r + ballB->r) {
-        struct vector dir_p, dir_v, temp;
+        struct vector p_ab, v_ab, temp;
+        double a, b, c, D;
+        double t = -1;
 
         // ボールの重なりを修正
-        while (dist(ballA->p, ballB->p) < ballA->r + ballB->r) {
-            ballA->p = sub(ballA->p, divi(ballA->v, 100));
-            ballB->p = sub(ballB->p, divi(ballB->v, 100));
+        p_ab = sub(ballA->p, ballB->p);
+        v_ab = sub(ballA->v, ballB->v);
+        a = pow(mag(v_ab), 2);
+        b = inner(p_ab, v_ab);
+        c = pow(mag(p_ab), 2) - pow(ballA->r + ballB->r, 2);
+        D = pow(b, 2) - a * c;
+
+        if (D >= 0) {
+            if (b >= sqrt(D))
+                t = (-b + sqrt(D)) / a;
+            if (b + sqrt(D) >= 0)
+                t = (-b - sqrt(D)) / a;
         }
 
-        // dir_p = sub(ballA->p, ballB->p);
-        // temp = mult(normal(dir_p), (ballA->r + ballB->r - mag(dir_p)) / 2);
-        // ballA->p = add(ballA->p, temp);
-        // ballB->p = sub(ballB->p, temp);
+        if (t <= 0) {
+            ballA->p = add(ballA->p, mult(ballA->v, t));
+            ballB->p = add(ballB->p, mult(ballB->v, t));
+        }
 
         // 2つのボールの相対位置と相対速度
-        dir_p = sub(ballA->p, ballB->p);
-        dir_v = sub(ballA->v, ballB->v);
+        p_ab = sub(ballA->p, ballB->p);
+        v_ab = sub(ballA->v, ballB->v);
 
         // 衝突後の速度を決定
-        temp = mult(normal(dir_p), -inner(normal(dir_p), dir_v));
+        temp = mult(normal(p_ab), -inner(normal(p_ab), v_ab));
         ballA->v = mult(add(ballA->v, temp), BALL_LOSS);
         ballB->v = mult(sub(ballB->v, temp), BALL_LOSS);
     }
