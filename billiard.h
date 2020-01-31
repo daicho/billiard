@@ -7,16 +7,14 @@
 #include "ball.h"
 #include "vector.h"
 
-#define WALL_LOSS 0.8 // 壁衝突時の速度損失
 #define BALL_NUM  10  // ボールの数
 
 // テーブル
 struct table {
-    int pocket_num;         // ポケットの数
-    struct vector *pockets; // ポケットの座標
-    double pocket_r;        // ポケットの半径
-    void (*collide)(struct ball *); // 衝突判定を行う関数
-    GLuint image;           // 画像
+    struct vector size; // 大きさ
+    double pocket_r;    // ポケットの半径
+    double wall_loss;   // 壁衝突時の速度損失
+    GLuint image;       // 画像
 };
 
 // キュー
@@ -31,8 +29,7 @@ void init(void);
 void update(void);
 int movingBall(void);
 
-void collideSquare(struct ball *);
-void collideCircle(struct ball *);
+void collideTable(struct table, struct ball *);
 void pocket(struct table, struct ball *);
 
 struct vector convertPoint(int, int);

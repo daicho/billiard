@@ -26,16 +26,7 @@
 struct ball balls[BALL_NUM];
 
 // テーブル
-struct vector pockets[6] = {
-    {-TABLE_W, TABLE_H},
-    {0,        TABLE_H},
-    {TABLE_W,  TABLE_H},
-    {-TABLE_W, -TABLE_H},
-    {0,        -TABLE_H},
-    {TABLE_W,  -TABLE_H}
-};
-
-struct table table = {6, pockets, 0.0896, collideSquare};
+struct table table = {{TABLE_W, TABLE_H}, 0.0896, 0.8};
 struct cue cue = {1, {0, 0}, 0};
 struct vector mouse = {0, 0};
 int pulling = 0;
@@ -97,14 +88,14 @@ void init(void) {
     // ボールを配置
     initBall(&balls[0], 0, -TABLE_W / 2, 0, BALL_R);
     initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
-    initBall(&balls[2], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
-    initBall(&balls[3], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
-    initBall(&balls[4], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R);
-    initBall(&balls[5], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
-    initBall(&balls[6], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[2], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
+    initBall(&balls[3], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
+    initBall(&balls[4], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[5], 2, p1.x + r * 2 * sqrt(3), p1.y - r * 2, BALL_R);
+    initBall(&balls[6], 4, p1.x + r * 2 * sqrt(3), p1.y + r * 2, BALL_R);
     initBall(&balls[7], 7, p1.x + r * 3 * sqrt(3), p1.y - r, BALL_R);
     initBall(&balls[8], 8, p1.x + r * 3 * sqrt(3), p1.y + r, BALL_R);
-    initBall(&balls[9], 9, p1.x + r * 2 * sqrt(3), p1.y, BALL_R);
+    initBall(&balls[9], 3, p1.x + r * 4 * sqrt(3), p1.y, BALL_R);
 
     // キューを配置
     cue.p = balls[0].p;
@@ -113,7 +104,6 @@ void init(void) {
 // 更新
 void update(void) {
     int i, j;
-    int colliding;
 
     // 移動
     for (i = 0; i < BALL_NUM; i++) {
@@ -131,7 +121,7 @@ void update(void) {
         }
 
         // テーブルとの衝突
-        table.collide(&balls[i]);
+        collideTable(table, &balls[i]);
     }
 
     // ポケット判定
@@ -142,7 +132,7 @@ void update(void) {
 
     // キューを引く
     if (pulling) {
-        power += 0.1;
+        power += 0.001;
         if (power > 0.15)
             power = 0.15;
     }
@@ -161,33 +151,29 @@ int movingBall(void) {
 }
 
 // 四角いテーブルの衝突判定
-void collideSquare(struct ball *ball) {
+void collideTable(struct table table, struct ball *ball) {
     if (ball->p.x > TABLE_W - ball->r) {
         ball->p.x = TABLE_W - ball->r;
-        ball->v.x *= -WALL_LOSS;
+        ball->v.x *= -1;
+        ball->v = mult(ball->v, table.wall_loss);
     }
 
     if (ball->p.x < -TABLE_W + ball->r) {
         ball->p.x = -TABLE_W + ball->r;
-        ball->v.x *= -WALL_LOSS;
+        ball->v.x *= -1;
+        ball->v = mult(ball->v, table.wall_loss);
     }
 
     if (ball->p.y > TABLE_H - balls->r) {
         ball->p.y = TABLE_H - balls->r;
-        ball->v.y *= -WALL_LOSS;
+        ball->v.y *= -1;
+        ball->v = mult(ball->v, table.wall_loss);
     }
 
     if (ball->p.y < -TABLE_H + balls->r) {
         ball->p.y = -TABLE_H + balls->r;
-        ball->v.y *= -WALL_LOSS;
-    }
-}
-
-// 丸いテーブルの衝突判定
-void collideCircle(struct ball *ball) {
-    if (mag(ball->p) > 1 - balls->r) {
-        ball->p = mult(normal(ball->p), 1 - ball->r);
-        ball->v = mult(rotate(ball->v, M_PI - (angle(ball->v) - angle(ball->p)) * 2), WALL_LOSS);
+        ball->v.y *= -1;
+        ball->v = mult(ball->v, table.wall_loss);
     }
 }
 
@@ -195,8 +181,18 @@ void collideCircle(struct ball *ball) {
 void pocket(struct table table, struct ball *ball) {
     int i;
 
-    for (i = 0; i < table.pocket_num; i++) {
-        if (dist(ball->p, table.pockets[i]) < table.pocket_r) {
+    // ポケットの座標
+    struct vector pockets[6] = {
+        {-table.size.x, table.size.y},
+        {0, table.size.y},
+        {table.size.x, table.size.y},
+        {-table.size.x, -table.size.y},
+        {0, -table.size.y},
+        {table.size.x, -table.size.y}
+    };
+
+    for (i = 0; i < 6; i++) {
+        if (dist(ball->p, pockets[i]) < table.pocket_r) {
             if (ball->num == 0) {
                 ball->p = vector(-TABLE_W / 2, 0);
             } else {

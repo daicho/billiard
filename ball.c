@@ -65,7 +65,7 @@ void drawBall(struct ball ball) {
 void collideBall(struct ball *ballA, struct ball *ballB) {
     if (dist(ballA->p, ballB->p) < ballA->r + ballB->r) {
         struct vector p_ab, v_ab, temp;
-        double a, b, c, D, t;
+        double a, b, c, t;
 
         // ボールの重なりを修正
         p_ab = sub(ballA->p, ballB->p);
