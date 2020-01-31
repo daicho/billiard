@@ -13,10 +13,8 @@
 #define FPS      60    // フレームレート
 #define ASPECT   2     // アスペクト比 (幅/高さ)
 #define BALL_R   0.04  // ボールの半径
-#define TABLE_W  1.75  // テーブルの幅
-#define TABLE_H  0.875 // テーブルの高さ
-#define CUE_W    1.024 // キューの幅
-#define CUE_H    0.032 // キューの高さ
+#define CUE_W    1.536 // キューの幅
+#define CUE_H    0.048 // キューの高さ
 
 // 角度を変換
 #define radian(deg) (deg * M_PI / 180.0)
@@ -26,7 +24,7 @@
 struct ball balls[BALL_NUM];
 
 // テーブル
-struct table table = {{TABLE_W, TABLE_H}, 0.0896, 0.8};
+struct table table = {{1.75, 0.875}, 0.0896, 0.8};
 struct cue cue = {1, {0, 0}, 0};
 struct vector mouse = {0, 0};
 int pulling = 0;
@@ -82,11 +80,11 @@ int main(int argc, char *argv[]) {
 
 // 初期化
 void init(void) {
-    struct vector p1 = {TABLE_W / 2, 0}; // 1番玉の位置
+    struct vector p1 = {table.size.x / 2, 0}; // 1番玉の位置
     double r = BALL_R + 0.0001; // ボールの間隔
 
     // ボールを配置
-    initBall(&balls[0], 0, -TABLE_W / 2, 0, BALL_R);
+    initBall(&balls[0], 0, -table.size.x / 2, 0, BALL_R);
     initBall(&balls[1], 1, p1.x, p1.y, BALL_R);
     initBall(&balls[2], 5, p1.x + r * sqrt(3), p1.y - r, BALL_R);
     initBall(&balls[3], 6, p1.x + r * sqrt(3), p1.y + r, BALL_R);
@@ -152,26 +150,26 @@ int movingBall(void) {
 
 // 四角いテーブルの衝突判定
 void collideTable(struct table table, struct ball *ball) {
-    if (ball->p.x > TABLE_W - ball->r) {
-        ball->p.x = TABLE_W - ball->r;
+    if (ball->p.x > table.size.x - ball->r) {
+        ball->p.x = table.size.x - ball->r;
         ball->v.x *= -1;
         ball->v = mult(ball->v, table.wall_loss);
     }
 
-    if (ball->p.x < -TABLE_W + ball->r) {
-        ball->p.x = -TABLE_W + ball->r;
+    if (ball->p.x < -table.size.x + ball->r) {
+        ball->p.x = -table.size.x + ball->r;
         ball->v.x *= -1;
         ball->v = mult(ball->v, table.wall_loss);
     }
 
-    if (ball->p.y > TABLE_H - balls->r) {
-        ball->p.y = TABLE_H - balls->r;
+    if (ball->p.y > table.size.y - balls->r) {
+        ball->p.y = table.size.y - balls->r;
         ball->v.y *= -1;
         ball->v = mult(ball->v, table.wall_loss);
     }
 
-    if (ball->p.y < -TABLE_H + balls->r) {
-        ball->p.y = -TABLE_H + balls->r;
+    if (ball->p.y < -table.size.y + balls->r) {
+        ball->p.y = -table.size.y + balls->r;
         ball->v.y *= -1;
         ball->v = mult(ball->v, table.wall_loss);
     }
@@ -194,7 +192,7 @@ void pocket(struct table table, struct ball *ball) {
     for (i = 0; i < 6; i++) {
         if (dist(ball->p, pockets[i]) < table.pocket_r) {
             if (ball->num == 0) {
-                ball->p = vector(-TABLE_W / 2, 0);
+                ball->p = vector(-table.size.x / 2, 0);
             } else {
                 ball->exist = 0;
             }
@@ -227,8 +225,7 @@ struct vector convertPoint(int x, int y) {
 // 画面描画
 void Display(void) {
     int i;
-    int target = 0;
-    double predict_min = 0;
+    double predict_min;
 
     GLfloat lightPos[2][4] = {
         {-1.0, 0.0, 10.0, 1.0},
@@ -246,9 +243,29 @@ void Display(void) {
 
     // 予測線
     if (!movingBall()) {
+        struct vector predict_pos;
+
+        // テーブルとの接触
+        if (sin(cue.angle) > 0)
+            predict_pos = vector(balls[0].p.x - 1 / -tan(cue.angle) * (balls[0].p.y + table.size.y - balls[0].r), table.size.y - balls[0].r);
+        else
+            predict_pos = vector(balls[0].p.x - 1 / -tan(cue.angle) * (balls[0].p.y - table.size.y + balls[0].r), -table.size.y + balls[0].r);
+
+        if (fabs(predict_pos.x) < table.size.x - balls[0].r)
+            predict_min = dist(balls[0].p, predict_pos);
+
+        if (cos(cue.angle) > 0)
+            predict_pos = vector(table.size.x - balls[0].r, balls[0].p.y - tan(cue.angle) * (balls[0].p.x - table.size.x + balls[0].r));
+        else
+            predict_pos = vector(-table.size.x + balls[0].r, balls[0].p.y - tan(cue.angle) * (balls[0].p.x + table.size.x - balls[0].r));
+
+        if (fabs(predict_pos.y) < table.size.y - balls[0].r)
+            predict_min = dist(balls[0].p, predict_pos);
+
+        // ボールとの接触
         for (i = 1; i < BALL_NUM; i++) {
             double touch;
-            double predict;
+            double predict_dist;
 
             if (!balls[i].exist || !cue.exist) continue;
             if (cos(angle(sub(balls[i].p, balls[0].p)) - cue.angle) < 0) continue;
@@ -258,11 +275,10 @@ void Display(void) {
 
             if (touch < balls[0].r + balls[i].r) {
                 // 衝突予想地点を算出
-                predict = dist(balls[0].p, balls[i].p) * cos(angle(sub(balls[i].p, balls[0].p)) - cue.angle) - sqrt(pow(balls[0].r + balls[i].r, 2) - pow(touch, 2));
+                predict_dist = dist(balls[0].p, balls[i].p) * cos(angle(sub(balls[i].p, balls[0].p)) - cue.angle) - sqrt(pow(balls[0].r + balls[i].r, 2) - pow(touch, 2));
 
-                if (!target || predict < predict_min) {
-                    target = i;
-                    predict_min = predict;
+                if (predict_dist < predict_min) {
+                    predict_min = predict_dist;
                 }
             }
         }
@@ -339,6 +355,12 @@ void Mouse(int b, int s, int x, int y) {
             pulling = 0;
             balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), power);
             power = 0;
+        }
+    }
+
+    if (b == GLUT_RIGHT_BUTTON) {
+        if (s == GLUT_DOWN) {
+            balls[0].p = mouse;
         }
     }
 }

@@ -65,7 +65,7 @@ void drawBall(struct ball ball) {
 void collideBall(struct ball *ballA, struct ball *ballB) {
     if (dist(ballA->p, ballB->p) < ballA->r + ballB->r) {
         struct vector p_ab, v_ab, temp;
-        double a, b, c, t;
+        double a, b, c, D, t;
 
         // ボールの重なりを修正
         p_ab = sub(ballA->p, ballB->p);
@@ -73,10 +73,13 @@ void collideBall(struct ball *ballA, struct ball *ballB) {
         a = pow(mag(v_ab), 2);
         b = inner(p_ab, v_ab);
         c = pow(mag(p_ab), 2) - pow(ballA->r + ballB->r, 2);
-        t = (-b - sqrt(pow(b, 2) - a * c)) / a;
+        D = pow(b, 2) - a * c;
 
-        ballA->p = add(ballA->p, mult(ballA->v, t));
-        ballB->p = add(ballB->p, mult(ballB->v, t));
+        if (D > 0) {
+            t = (-b - sqrt(D)) / a;
+            ballA->p = add(ballA->p, mult(ballA->v, t));
+            ballB->p = add(ballB->p, mult(ballB->v, t));
+        }
 
         // 2つのボールの相対位置と相対速度
         p_ab = sub(ballA->p, ballB->p);
