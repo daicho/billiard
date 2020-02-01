@@ -247,9 +247,9 @@ void Display(void) {
 
         // テーブルとの接触
         if (sin(cue.angle) > 0)
-            predict_pos = vector(balls[0].p.x - 1 / -tan(cue.angle) * (balls[0].p.y + table.size.y - balls[0].r), table.size.y - balls[0].r);
+            predict_pos = vector(balls[0].p.x - (balls[0].p.y - table.size.y + balls[0].r) / tan(cue.angle), table.size.y - balls[0].r);
         else
-            predict_pos = vector(balls[0].p.x - 1 / -tan(cue.angle) * (balls[0].p.y - table.size.y + balls[0].r), -table.size.y + balls[0].r);
+            predict_pos = vector(balls[0].p.x - (balls[0].p.y + table.size.y - balls[0].r) / tan(cue.angle), balls[0].r - table.size.y);
 
         if (fabs(predict_pos.x) < table.size.x - balls[0].r)
             predict_min = dist(balls[0].p, predict_pos);
@@ -257,7 +257,7 @@ void Display(void) {
         if (cos(cue.angle) > 0)
             predict_pos = vector(table.size.x - balls[0].r, balls[0].p.y - tan(cue.angle) * (balls[0].p.x - table.size.x + balls[0].r));
         else
-            predict_pos = vector(-table.size.x + balls[0].r, balls[0].p.y - tan(cue.angle) * (balls[0].p.x + table.size.x - balls[0].r));
+            predict_pos = vector(balls[0].r - table.size.x, balls[0].p.y - tan(cue.angle) * (balls[0].p.x + table.size.x - balls[0].r));
 
         if (fabs(predict_pos.y) < table.size.y - balls[0].r)
             predict_min = dist(balls[0].p, predict_pos);
