@@ -22,12 +22,21 @@ struct cue {
     int exist;       // 存在しているか
     struct vector p; // 位置
     double angle;    // 角度
+    double power;    // 力
     GLuint image;    // 画像
+};
+
+// 状態
+enum status {
+    Stop, // 静止中
+    Pull, // キューを引いてる
+    Put,  // 手玉を配置
+    Move  // 動いている
 };
 
 void init(void);
 void update(void);
-int movingBall(void);
+int ballMoving(void);
 
 void collideTable(struct table, struct ball *);
 void pocket(struct table, struct ball *);
@@ -41,11 +50,12 @@ void Mouse(int, int, int, int);
 void PassiveMotion(int, int);
 
 extern struct ball balls[BALL_NUM];
-extern struct vector pockets[6];
 extern struct table table;
 extern struct cue cue;
-extern struct vector mouse;
-extern int pulling;
-extern double power;
+
+extern enum status status;
+extern int break_shot;
+extern int next;
+extern int first_touch;
 
 #endif

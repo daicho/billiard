@@ -6,7 +6,7 @@
 
 #include "vector.h"
 
-#define FRICTION  0.0003 // 摩擦
+#define FRICTION  0.0002 // 摩擦
 #define BALL_LOSS 0.95   // ボール衝突時の速度損失
 
 // ボール
@@ -24,6 +24,7 @@ struct ball {
 void initBall(struct ball *, int, double, double, double);
 void moveBall(struct ball *);
 void drawBall(struct ball);
-void collideBall(struct ball *, struct ball *);
+int ballColliding(struct ball, struct ball);
+void reflectBall(struct ball *, struct ball *, int);
 
 #endif

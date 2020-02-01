@@ -10,25 +10,25 @@
 #include "vector.h"
 #include "shape.h"
 
-#define FPS      60    // フレームレート
-#define ASPECT   2     // アスペクト比 (幅/高さ)
-#define BALL_R   0.04  // ボールの半径
-#define CUE_W    1.536 // キューの幅
-#define CUE_H    0.048 // キューの高さ
+#define FPS    60    // フレームレート
+#define ASPECT 2     // アスペクト比 (幅/高さ)
+#define BALL_R 0.04  // ボールの半径
+#define CUE_W  1.536 // キューの幅
+#define CUE_H  0.048 // キューの高さ
 
 // 角度を変換
 #define radian(deg) (deg * M_PI / 180.0)
 #define degree(rad) (rad * 180.0 / M_PI)
 
-// ボール
+// オブジェクト
 struct ball balls[BALL_NUM];
-
-// テーブル
 struct table table = {{1.75, 0.875}, 0.0896, 0.8};
 struct cue cue = {1, {0, 0}, 0};
-struct vector mouse = {0, 0};
-int pulling = 0;
-double power = 0;
+
+enum status status = Stop;
+int break_shot = 1;
+int next = 1;
+int first_touch = 0;
 
 int main(int argc, char *argv[]) {
     int i;
@@ -103,41 +103,75 @@ void init(void) {
 void update(void) {
     int i, j;
 
-    // 移動
-    for (i = 0; i < BALL_NUM; i++) {
-        if (balls[i].exist)
-            moveBall(&balls[i]);
-    }
+    switch (status) {
+        case Move: {
+            // 移動
+            for (i = 0; i < BALL_NUM; i++) {
+                if (balls[i].exist)
+                    moveBall(&balls[i]);
+            }
 
-    // ボール同士の衝突
-    for (i = 0; i < BALL_NUM; i++) {
-        if (!balls[i].exist) continue;
+            // 最初に触れたボール
+            if (!first_touch) {
+                for (i = 1; i < BALL_NUM; i++) {
+                    if (ballColliding(balls[0], balls[i])) {
+                        first_touch = balls[i].num;
+                        break;
+                    }
+                }
+            }
 
-        for (j = i + 1; j < BALL_NUM; j++) {
-            if (balls[j].exist)
-                collideBall(&balls[i], &balls[j]);
+            // ボール同士の反射
+            for (i = 0; i < BALL_NUM; i++) {
+                if (!balls[i].exist) continue;
+
+                for (j = i + 1; j < BALL_NUM; j++) {
+                    if (balls[j].exist)
+                        reflectBall(&balls[i], &balls[j], break_shot);
+                }
+
+                // テーブルとの反射
+                collideTable(table, &balls[i]);
+            }
+
+            // ポケット判定
+            for (i = 0; i < BALL_NUM; i++) {
+                if (balls[i].exist)
+                    pocket(table, &balls[i]);
+            }
+
+            if (!ballMoving()) {
+                status = Stop;
+                break_shot = 0;
+
+                printf("first_touch = %d, next = %d\n", first_touch, next);
+
+                // 次に落とすべきボール
+                next = 0;
+                for (i = 1; i < BALL_NUM; i++) {
+                    if (balls[i].exist && (balls[i].num < next || next == 0))
+                        next = balls[i].num;
+                }
+            }
+
+            break;
         }
 
-        // テーブルとの衝突
-        collideTable(table, &balls[i]);
-    }
+        case Pull: {
+            cue.power += 0.001;
+            if (cue.power > 0.15)
+                cue.power = 0.15;
 
-    // ポケット判定
-    for (i = 0; i < BALL_NUM; i++) {
-        if (balls[i].exist)
-            pocket(table, &balls[i]);
-    }
+            break;
+        }
 
-    // キューを引く
-    if (pulling) {
-        power += 0.001;
-        if (power > 0.15)
-            power = 0.15;
+        default:
+            break;
     }
 }
 
 // ボールが動いているか
-int movingBall(void) {
+int ballMoving(void) {
     int i;
 
     for (i = 0; i < BALL_NUM; i++) {
@@ -152,23 +186,27 @@ int movingBall(void) {
 void collideTable(struct table table, struct ball *ball) {
     if (ball->p.x > table.size.x - ball->r) {
         ball->p.x = table.size.x - ball->r;
+        ball->p.y = ball->p.y - tan(angle(ball->v)) * (ball->p.x - table.size.x + ball->r);
         ball->v.x *= -1;
         ball->v = mult(ball->v, table.wall_loss);
     }
 
     if (ball->p.x < -table.size.x + ball->r) {
         ball->p.x = -table.size.x + ball->r;
+        ball->p.y = ball->p.y - tan(angle(ball->v)) * (ball->p.x + table.size.x - ball->r);
         ball->v.x *= -1;
         ball->v = mult(ball->v, table.wall_loss);
     }
 
     if (ball->p.y > table.size.y - balls->r) {
+        ball->p.x = ball->p.x - (ball->p.y - table.size.y + ball->r) / tan(angle(ball->v));
         ball->p.y = table.size.y - balls->r;
         ball->v.y *= -1;
         ball->v = mult(ball->v, table.wall_loss);
     }
 
     if (ball->p.y < -table.size.y + balls->r) {
+        ball->p.x = ball->p.x - (ball->p.y + table.size.y - ball->r) / tan(angle(ball->v));
         ball->p.y = -table.size.y + balls->r;
         ball->v.y *= -1;
         ball->v = mult(ball->v, table.wall_loss);
@@ -242,7 +280,7 @@ void Display(void) {
     putSprite(table.image, 0, 0, 0, ASPECT * 2, 2);
 
     // 予測線
-    if (!movingBall()) {
+    if (!ballMoving()) {
         struct vector predict_pos;
 
         // テーブルとの接触
@@ -310,7 +348,7 @@ void Display(void) {
         glPushMatrix();
         glTranslated(cue.p.x, cue.p.y, 0);
         glRotated(degree(cue.angle) + 180, 0, 0, 1);
-        putSprite(cue.image, balls[0].r + CUE_W / 2 + power * 2, 0, balls[0].r * 2, CUE_W, CUE_H);
+        putSprite(cue.image, balls[0].r + CUE_W / 2 + cue.power * 2, 0, balls[0].r * 2, CUE_W, CUE_H);
         glPopMatrix();
     }
 
@@ -342,34 +380,29 @@ void Timer(int value) {
 
 // マウスクリック
 void Mouse(int b, int s, int x, int y) {
-    mouse = convertPoint(x, y);
+    struct vector mouse = convertPoint(x, y);
 
     if (b == GLUT_LEFT_BUTTON) {
-        if (s == GLUT_DOWN && !movingBall()) {
-            pulling = 1;
+        if (s == GLUT_DOWN && status == Stop) {
+            status = Pull;
             cue.angle = angle(sub(mouse, balls[0].p));
             cue.p = balls[0].p;
         }
 
-        if (s == GLUT_UP && pulling) {
-            pulling = 0;
-            balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), power);
-            power = 0;
-        }
-    }
-
-    if (b == GLUT_RIGHT_BUTTON) {
-        if (s == GLUT_DOWN) {
-            balls[0].p = mouse;
+        if (s == GLUT_UP && status == Pull) {
+            status = Move;
+            balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
+            cue.power = 0;
+            first_touch = 0;
         }
     }
 }
 
 // マウス移動
 void PassiveMotion(int x, int y) {
-    mouse = convertPoint(x, y); 
+    struct vector mouse = convertPoint(x, y);
 
-    if (!movingBall()) {
+    if (!ballMoving()) {
         cue.angle = angle(sub(mouse, balls[0].p));
         cue.p = balls[0].p;
     }

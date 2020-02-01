@@ -5,6 +5,7 @@
 
 #include "ball.h"
 #include "vector.h"
+#include "shape.h"
 
 // 角度を変換
 #define rad(deg) (rad * M_PI / 180.0)
@@ -27,7 +28,7 @@ void moveBall(struct ball *ball) {
     ball->p = add(ball->p, ball->v);
 
     // 回転
-    ball->angle = fmod(ball->angle + mag(ball->v) / (2 * ball->r), 2 * M_PI);
+    ball->angle = fmod(ball->angle + mag(ball->v) / ball->r, 2 * M_PI);
 
     if (!isZero(ball->v))
         ball->dir = normal(ball->v);
@@ -61,9 +62,14 @@ void drawBall(struct ball ball) {
     glDisable(GL_TEXTURE_2D);
 }
 
-// ボール同士の衝突判定
-void collideBall(struct ball *ballA, struct ball *ballB) {
-    if (dist(ballA->p, ballB->p) < ballA->r + ballB->r) {
+// ボールが衝突しているか
+int ballColliding(struct ball ballA, struct ball ballB) {
+    return dist(ballA.p, ballB.p) < ballA.r + ballB.r;
+}
+
+// ボール同士の反射
+void reflectBall(struct ball *ballA, struct ball *ballB, int break_shot) {
+    if (ballColliding(*ballA, *ballB)) {
         struct vector p_ab, v_ab, temp;
         double a, b, c, D, t;
 
@@ -75,10 +81,14 @@ void collideBall(struct ball *ballA, struct ball *ballB) {
         c = pow(mag(p_ab), 2) - pow(ballA->r + ballB->r, 2);
         D = pow(b, 2) - a * c;
 
-        if (D > 0) {
+        if (D > 0 && !break_shot) {
             t = (-b - sqrt(D)) / a;
             ballA->p = add(ballA->p, mult(ballA->v, t));
             ballB->p = add(ballB->p, mult(ballB->v, t));
+        } else {
+            temp = mult(normal(p_ab), (ballA->r + ballB->r - mag(p_ab)) / 2);
+            ballA->p = add(ballA->p, temp);
+            ballB->p = sub(ballB->p, temp);
         }
 
         // 2つのボールの相対位置と相対速度
