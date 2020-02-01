@@ -11,7 +11,7 @@
 #include "shape.h"
 
 #define FPS    60    // フレームレート
-#define ASPECT 2     // アスペクト比 (幅/高さ)
+#define ASPECT 2.0   // アスペクト比 (幅/高さ)
 #define BALL_R 0.04  // ボールの半径
 #define CUE_W  1.536 // キューの幅
 #define CUE_H  0.048 // キューの高さ
@@ -21,11 +21,18 @@
 #define degree(rad) (rad * 180.0 / M_PI)
 
 // オブジェクト
+struct ball prev_balls[BALL_NUM];
 struct ball balls[BALL_NUM];
 struct table table = {{1.75, 0.875}, 0.0896, 0.8};
 struct cue cue = {1, {0, 0}, 0};
+GLuint invalid_image;
+GLuint highlight_image;
+GLuint turn_images[2];
 
+struct vector mouse = {0, 0};
 enum status status = Stop;
+int turn = 0;
+int turn_left = TURN_TIME;
 int break_shot = 1;
 int next = 1;
 int first_touch = 0;
@@ -90,6 +97,10 @@ void init(void) {
     // 画像読み込み
     table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     cue.image = pngBind("images/cue.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    invalid_image = pngBind("images/invalid.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    highlight_image = pngBind("images/highlight.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    turn_images[0] = pngBind("images/player1.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    turn_images[1] = pngBind("images/player2.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
 
     for (i = 0; i < BALL_NUM; i++) {
         char fileName[32];
@@ -103,6 +114,11 @@ void update(void) {
     int i, j;
 
     switch (status) {
+        case Stop: {
+            cue.angle = angle(sub(mouse, balls[0].p));
+            break;
+        }
+
         case Move: {
             // 移動
             for (i = 0; i < BALL_NUM; i++) {
@@ -140,18 +156,37 @@ void update(void) {
             }
 
             if (!ballMoving()) {
-                break_shot = 0;
-                status = Stop;
+                // ファウルしたか
+                if (balls[0].exist && first_touch == next) {
+                    int pocket = 0;
+                    status = Stop;
 
-                if (!balls[0].exist) {
-                    status = Put;
-                    balls[0].exist = 1;
-                    balls[0].p = vector(-table.size.x / 2, 0);
-                    balls[0].angle = 0;
-                }
+                    // ボールが落ちていたら続行
+                    for (i = 0; i < BALL_NUM; i++) {
+                        if (prev_balls[i].exist && !balls[i].exist) {
+                            pocket = 1;
+                            break;
+                        }
+                    }
 
-                if (first_touch != next) {
+                    if (!pocket) {
+                        turn ^= 1;
+                        turn_left = TURN_TIME;
+                    }
+
+                    break_shot = 0;
+                    cue.p = balls[0].p;
+                    cue.angle = angle(sub(mouse, balls[0].p));
+                } else {
                     status = Put;
+                    turn ^= 1;
+                    turn_left = TURN_TIME;
+
+                    // ボールの状態を復元
+                    for (i = 0; i < BALL_NUM; i++)
+                        balls[i] = prev_balls[i];
+
+                    balls[0].p = mouse;
                     balls[0].angle = 0;
                 }
 
@@ -174,21 +209,11 @@ void update(void) {
             break;
         }
 
-        default:
+        case Put: {
+            balls[0].p = mouse;
             break;
+        }
     }
-}
-
-// ボールが動いているか
-int ballMoving(void) {
-    int i;
-
-    for (i = 0; i < BALL_NUM; i++) {
-        if (!isZero(balls[i].v))
-            return 1;
-    }
-
-    return 0;
 }
 
 // 四角いテーブルの衝突判定
@@ -245,6 +270,33 @@ void pocketIn(struct table table, struct ball *ball) {
     }
 }
 
+// ボールが動いているか
+int ballMoving(void) {
+    int i;
+
+    for (i = 0; i < BALL_NUM; i++) {
+        if (!isZero(balls[i].v))
+            return 1;
+    }
+
+    return 0;
+}
+
+// ボールを置けるか
+int canPut(void) {
+    int i;
+
+    if (fabs(balls[0].p.x) > table.size.x - balls[0].r || fabs(balls[0].p.y) > table.size.y - balls[0].r)
+        return 0;
+
+    for (i = 1; i < BALL_NUM; i++) {
+        if (ballColliding(balls[0], balls[i]))
+            return 0;
+    }
+
+    return 1;
+}
+
 // 描画時の座標に変換
 struct vector convertPoint(int x, int y) {
     struct vector point;
@@ -266,7 +318,9 @@ struct vector convertPoint(int x, int y) {
 // 画面描画
 void Display(void) {
     int i;
+    int target = 0;
     double predict_min;
+    struct vector predict_pos;
 
     GLfloat lightPos[2][4] = {
         {-1.0, 0.0, 10.0, 1.0},
@@ -280,12 +334,20 @@ void Display(void) {
     glLightfv(GL_LIGHT1, GL_POSITION, lightPos[1]);
 
     // テーブル
-    putSprite(table.image, 0, 0, 0, ASPECT * 2, 2);
+    putSprite(table.image, 0, 0, ASPECT * 2, ASPECT, 1);
 
-    // 予測線
-    if (status == Stop) {
-        struct vector predict_pos;
+    // ハイライト
+    if (status != Move) {
+        for (i = 1; i < BALL_NUM; i++) {
+            if (balls[i].exist && next == balls[i].num) {
+                putSprite(highlight_image, balls[i].p.x, balls[i].p.y, balls[i].r * 3, balls[i].r * 3, 1);
+                break;
+            }
+        }
+    }
 
+    // 予想線
+    if (status == Stop || status == Pull) {
         // テーブルとの接触
         if (sin(cue.angle) > 0)
             predict_pos = vector(balls[0].p.x - (balls[0].p.y - table.size.y + balls[0].r) / tan(cue.angle), table.size.y - balls[0].r);
@@ -319,6 +381,7 @@ void Display(void) {
                 predict_dist = dist(balls[0].p, balls[i].p) * cos(angle(sub(balls[i].p, balls[0].p)) - cue.angle) - sqrt(pow(balls[0].r + balls[i].r, 2) - pow(touch, 2));
 
                 if (predict_dist < predict_min) {
+                    target = i;
                     predict_min = predict_dist;
                 }
             }
@@ -341,18 +404,32 @@ void Display(void) {
     }
 
     // ボール
-    for (i = 0; i < BALL_NUM; i++) {
+    for (i = BALL_NUM - 1; i >= 0; i--) {
         if (balls[i].exist)
             drawBall(balls[i]);
     }
+
+    // 無効マーク
+    if (status == Put && !canPut())
+        putSprite(invalid_image, balls[0].p.x, balls[0].p.y, balls[0].r * 2, balls[0].r * 2, 1);
+
+    if ((status == Stop || status == Pull) && target && balls[target].num != next)
+        putSprite(invalid_image, balls[target].p.x, balls[target].p.y, balls[target].r * 2, balls[target].r * 2, 1);
 
     // キュー
     if (cue.exist) {
         glPushMatrix();
         glTranslated(cue.p.x, cue.p.y, 0);
         glRotated(degree(cue.angle) + 180, 0, 0, 1);
-        putSprite(cue.image, balls[0].r + CUE_W / 2 + cue.power * 2, 0, balls[0].r * 2, CUE_W, CUE_H);
+        putSprite(cue.image, balls[0].r + CUE_W / 2 + cue.power * 2, 0, CUE_W, CUE_H, 1);
         glPopMatrix();
+    }
+
+    // ターン表示
+    if (turn_left > 0) {
+        double step = 1 - 2.0 * turn_left / TURN_TIME;
+        turn_left--;
+        putSprite(turn_images[turn], 0, 0, ASPECT * 2, ASPECT, 1 - pow(step, 4));
     }
 
     glFlush();
@@ -383,7 +460,9 @@ void Timer(int value) {
 
 // マウスクリック
 void Mouse(int b, int s, int x, int y) {
-    struct vector mouse = convertPoint(x, y);
+    int i;
+
+    mouse = convertPoint(x, y);
 
     if (b == GLUT_LEFT_BUTTON) {
         switch (status) {
@@ -391,7 +470,6 @@ void Mouse(int b, int s, int x, int y) {
                 if (s == GLUT_DOWN) {
                     status = Pull;
                     cue.angle = angle(sub(mouse, balls[0].p));
-                    cue.p = balls[0].p;
                 }
 
                 break;
@@ -400,6 +478,11 @@ void Mouse(int b, int s, int x, int y) {
             case Pull: {
                 if (s == GLUT_UP) {
                     status = Move;
+
+                    // 状態を保持
+                    for (i = 0; i < BALL_NUM; i++)
+                        prev_balls[i] = balls[i];
+
                     balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
                     cue.power = 0;
                     first_touch = 0;
@@ -409,9 +492,9 @@ void Mouse(int b, int s, int x, int y) {
             }
 
             case Put: {
-                if (s == GLUT_DOWN) {
+                if (s == GLUT_DOWN && canPut()) {
                     status = Stop;
-                    balls[0].p = mouse;
+                    cue.p = balls[0].p = mouse;
                 }
 
                 break;
@@ -425,21 +508,5 @@ void Mouse(int b, int s, int x, int y) {
 
 // マウス移動
 void PassiveMotion(int x, int y) {
-    struct vector mouse = convertPoint(x, y);
-
-    switch (status) {
-        case Stop: {
-            cue.angle = angle(sub(mouse, balls[0].p));
-            cue.p = balls[0].p;
-            break;
-        }
-
-        case Put: {
-            balls[0].p = mouse;
-            break;
-        }
-        
-        default:
-            break;
-    }
+    mouse = convertPoint(x, y);
 }

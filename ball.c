@@ -47,7 +47,6 @@ void drawBall(struct ball ball) {
     gluQuadricNormals(sphere, GLU_SMOOTH);
     gluQuadricTexture(sphere, GL_TRUE);
 
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, ball.image);
 

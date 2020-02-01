@@ -8,6 +8,7 @@
 #include "vector.h"
 
 #define BALL_NUM  10  // ボールの数
+#define TURN_TIME 120 // ターン表示の時間
 
 // テーブル
 struct table {
@@ -36,10 +37,11 @@ enum status {
 
 void init(void);
 void update(void);
-int ballMoving(void);
 
 void collideTable(struct table, struct ball *);
 void pocketIn(struct table, struct ball *);
+int ballMoving(void);
+int canPut(void);
 
 struct vector convertPoint(int, int);
 
@@ -49,11 +51,18 @@ void Timer(int);
 void Mouse(int, int, int, int);
 void PassiveMotion(int, int);
 
+extern struct ball prev_balls[BALL_NUM];
 extern struct ball balls[BALL_NUM];
 extern struct table table;
 extern struct cue cue;
+extern GLuint invalid_image;
+extern GLuint highlight_image;
+extern GLuint turn_images[2];
 
+extern struct vector mouse;
 extern enum status status;
+extern int turn;
+extern int turn_left;
 extern int break_shot;
 extern int next;
 extern int first_touch;
