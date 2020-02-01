@@ -39,7 +39,7 @@ void update(void);
 int ballMoving(void);
 
 void collideTable(struct table, struct ball *);
-void pocket(struct table, struct ball *);
+void pocketIn(struct table, struct ball *);
 
 struct vector convertPoint(int, int);
 

@@ -6,9 +6,8 @@
 #include "shape.h"
 
 // 正円を描画
-void drawCircle(double x, double y, double r) {
+void drawCircle(double x, double y, double r, int h) {
     int i;
-    int h = 50;
 
     glBegin(GL_LINE_LOOP);
 

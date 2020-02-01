@@ -31,8 +31,6 @@ int next = 1;
 int first_touch = 0;
 
 int main(int argc, char *argv[]) {
-    int i;
-
     // 初期化
     glutInit(&argc, argv);
     glutInitWindowSize(720, 360);
@@ -54,16 +52,6 @@ int main(int argc, char *argv[]) {
     glEnable(GL_LIGHT1);
     glEnable(GL_CULL_FACE);
 
-    // 画像読み込み
-    table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
-    cue.image = pngBind("images/cue.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
-
-    for (i = 0; i < BALL_NUM; i++) {
-        char fileName[32];
-        sprintf(fileName, "images/%d.png", i);
-        balls[i].image = pngBind(fileName, PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
-    }
-
     // コールバック関数登録
     glutDisplayFunc(Display);
     glutReshapeFunc(Reshape);
@@ -80,6 +68,7 @@ int main(int argc, char *argv[]) {
 
 // 初期化
 void init(void) {
+    int i;
     struct vector p1 = {table.size.x / 2, 0}; // 1番玉の位置
     double r = BALL_R + 0.0001; // ボールの間隔
 
@@ -97,6 +86,16 @@ void init(void) {
 
     // キューを配置
     cue.p = balls[0].p;
+
+    // 画像読み込み
+    table.image = pngBind("images/square.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    cue.image = pngBind("images/cue.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+
+    for (i = 0; i < BALL_NUM; i++) {
+        char fileName[32];
+        sprintf(fileName, "images/%d.png", balls[i].num);
+        balls[i].image = pngBind(fileName, PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
+    }
 }
 
 // 更新
@@ -137,14 +136,24 @@ void update(void) {
             // ポケット判定
             for (i = 0; i < BALL_NUM; i++) {
                 if (balls[i].exist)
-                    pocket(table, &balls[i]);
+                    pocketIn(table, &balls[i]);
             }
 
             if (!ballMoving()) {
-                status = Stop;
                 break_shot = 0;
+                status = Stop;
 
-                printf("first_touch = %d, next = %d\n", first_touch, next);
+                if (!balls[0].exist) {
+                    status = Put;
+                    balls[0].exist = 1;
+                    balls[0].p = vector(-table.size.x / 2, 0);
+                    balls[0].angle = 0;
+                }
+
+                if (first_touch != next) {
+                    status = Put;
+                    balls[0].angle = 0;
+                }
 
                 // 次に落とすべきボール
                 next = 0;
@@ -159,8 +168,8 @@ void update(void) {
 
         case Pull: {
             cue.power += 0.001;
-            if (cue.power > 0.15)
-                cue.power = 0.15;
+            if (cue.power > 0.12)
+                cue.power = 0.12;
 
             break;
         }
@@ -214,7 +223,7 @@ void collideTable(struct table table, struct ball *ball) {
 }
 
 // ポケットに入ったか
-void pocket(struct table table, struct ball *ball) {
+void pocketIn(struct table table, struct ball *ball) {
     int i;
 
     // ポケットの座標
@@ -229,14 +238,8 @@ void pocket(struct table table, struct ball *ball) {
 
     for (i = 0; i < 6; i++) {
         if (dist(ball->p, pockets[i]) < table.pocket_r) {
-            if (ball->num == 0) {
-                ball->p = vector(-table.size.x / 2, 0);
-            } else {
-                ball->exist = 0;
-            }
-
+            ball->exist = 0;
             ball->v = ZERO;
-
             break;
         }
     }
@@ -280,7 +283,7 @@ void Display(void) {
     putSprite(table.image, 0, 0, 0, ASPECT * 2, 2);
 
     // 予測線
-    if (!ballMoving()) {
+    if (status == Stop) {
         struct vector predict_pos;
 
         // テーブルとの接触
@@ -332,7 +335,7 @@ void Display(void) {
         glVertex2d(predict_min - balls[0].r, 0);
         glEnd();
 
-        drawCircle(predict_min, 0, balls[0].r);
+        drawCircle(predict_min, 0, balls[0].r, 32);
         glPopMatrix();
         glEnable(GL_LIGHTING);
     }
@@ -383,17 +386,39 @@ void Mouse(int b, int s, int x, int y) {
     struct vector mouse = convertPoint(x, y);
 
     if (b == GLUT_LEFT_BUTTON) {
-        if (s == GLUT_DOWN && status == Stop) {
-            status = Pull;
-            cue.angle = angle(sub(mouse, balls[0].p));
-            cue.p = balls[0].p;
-        }
+        switch (status) {
+            case Stop: {
+                if (s == GLUT_DOWN) {
+                    status = Pull;
+                    cue.angle = angle(sub(mouse, balls[0].p));
+                    cue.p = balls[0].p;
+                }
 
-        if (s == GLUT_UP && status == Pull) {
-            status = Move;
-            balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
-            cue.power = 0;
-            first_touch = 0;
+                break;
+            }
+
+            case Pull: {
+                if (s == GLUT_UP) {
+                    status = Move;
+                    balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
+                    cue.power = 0;
+                    first_touch = 0;
+                }
+
+                break;
+            }
+
+            case Put: {
+                if (s == GLUT_DOWN) {
+                    status = Stop;
+                    balls[0].p = mouse;
+                }
+
+                break;
+            }
+
+            default:
+                break;
         }
     }
 }
@@ -402,8 +427,19 @@ void Mouse(int b, int s, int x, int y) {
 void PassiveMotion(int x, int y) {
     struct vector mouse = convertPoint(x, y);
 
-    if (!ballMoving()) {
-        cue.angle = angle(sub(mouse, balls[0].p));
-        cue.p = balls[0].p;
+    switch (status) {
+        case Stop: {
+            cue.angle = angle(sub(mouse, balls[0].p));
+            cue.p = balls[0].p;
+            break;
+        }
+
+        case Put: {
+            balls[0].p = mouse;
+            break;
+        }
+        
+        default:
+            break;
     }
 }
