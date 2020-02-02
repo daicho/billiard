@@ -20,10 +20,10 @@ void drawCircle(double x, double y, double r, int h) {
 }
 
 // 画像を表示
-// num  : 画像の番号
+// num : 画像の番号
 // x, y : 座標
 // w, h : サイズ
-// a    : 不透明度
+// a : 不透明度
 void putSprite(GLuint num, double x, double y, double w, double h, double a) {
     glDisable(GL_LIGHTING);
     glEnable(GL_TEXTURE_2D);
