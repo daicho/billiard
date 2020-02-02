@@ -191,7 +191,7 @@ void update(void) {
             break;
         }
 
-        // 手玉を配置中
+        // 手球を配置中
         case Put: {
             if (turn == CPU) {
                 // 置ける場所にランダムに配置
@@ -220,7 +220,7 @@ void update(void) {
                 for (i = 0; i < BALL_NUM; i++)
                     prev_balls[i] = balls[i];
 
-                // 手玉に初速度を与える
+                // 手球に初速度を与える
                 balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
                 cue.power = 0;
                 first_touch = 0;
@@ -299,7 +299,7 @@ void update(void) {
                         win_left = RESULT_TIME;
                     }
                 } else {
-                    // ファウルだったらターンチェンジして手玉の自由配置
+                    // ファウルだったらターンチェンジして手球の自由配置
                     status = Put;
                     turn ^= 1;
                     turn_left = TURN_TIME;
@@ -419,7 +419,7 @@ void Display(void) {
             }
         }
 
-        // 予想線
+        // 予測線
         if (status == Stop || status == Pull) {
             // 台との接触
             if (sin(cue.angle) > 0)
@@ -445,7 +445,7 @@ void Display(void) {
 
                 if (!balls[i].exist || cos(angle(sub(balls[i].p, balls[0].p)) - cue.angle) < 0) continue;
 
-                // 手玉の軌道上との距離を算出
+                // 手球の軌道上との距離を算出
                 touch = fabs(tan(cue.angle) * (balls[i].p.x - balls[0].p.x) - balls[i].p.y + balls[0].p.y) / mag(vector(tan(cue.angle), 1));
 
                 if (touch < balls[0].r + balls[i].r) {
@@ -594,7 +594,7 @@ void Mouse(int button, int stat, int x, int y) {
                         for (i = 0; i < BALL_NUM; i++)
                             prev_balls[i] = balls[i];
 
-                        // 手玉に初速度を与える
+                        // 手球に初速度を与える
                         balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
                         cue.power = 0;
                         first_touch = 0;
@@ -603,7 +603,7 @@ void Mouse(int button, int stat, int x, int y) {
                     break;
                 }
 
-                // 手玉配置中
+                // 手球配置中
                 case Put: {
                     if (stat == GLUT_DOWN && canPut()) {
                         status = Stop;

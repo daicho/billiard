@@ -1,4 +1,4 @@
-TARGET = billiard.exe
+TARGET = j16426.exe
 
 SRCS = billiard.c ball.c table.c vector.c shape.c
 ICON = icon.ico

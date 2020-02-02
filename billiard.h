@@ -29,7 +29,7 @@ enum scene {
 enum status {
     Stop,  // 静止中
     Pull,  // キューを引いてる
-    Put,   // 手玉を配置中
+    Put,   // 手球を配置中
     Move,  // 移動中
     Result // 勝者表示
 };
