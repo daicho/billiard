@@ -21,7 +21,7 @@ struct ball {
     GLuint image;      // 画像
 };
 
-void initBall(struct ball *, int, double, double, double);
+void initBall(struct ball *, int, struct vector, double);
 void moveBall(struct ball *);
 void drawBall(struct ball);
 int ballColliding(struct ball, struct ball);

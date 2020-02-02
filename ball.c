@@ -5,18 +5,17 @@
 
 #include "ball.h"
 #include "vector.h"
-#include "shape.h"
 
 // 角度を変換
-#define rad(deg) (rad * M_PI / 180.0)
+#define radian(deg) (rad * M_PI / 180.0)
 #define degree(rad) (rad * 180.0 / M_PI)
 
 // ball構造体を初期化
-void initBall(struct ball *ball, int num, double px, double py, double r) {
+void initBall(struct ball *ball, int num, struct vector p, double r) {
     ball->num = num;
     ball->exist = 1;
     ball->r = r;
-    ball->p = vector(px, py);
+    ball->p = p;
     ball->v = ZERO;
     ball->dir = vector(1, 0);
     ball->angle = 0;
@@ -24,14 +23,9 @@ void initBall(struct ball *ball, int num, double px, double py, double r) {
 
 // 移動
 void moveBall(struct ball *ball) {
-    // 移動
     ball->p = add(ball->p, ball->v);
-
-    // 回転
     ball->angle = fmod(ball->angle + mag(ball->v) / ball->r, 2 * M_PI);
-
-    if (!isZero(ball->v))
-        ball->dir = normal(ball->v);
+    if (!isZero(ball->v)) ball->dir = normal(ball->v);
 
     // 摩擦
     if (mag(ball->v) <= 0.001)

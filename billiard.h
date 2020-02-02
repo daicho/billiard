@@ -42,6 +42,14 @@ enum status {
     Result // 結果
 };
 
+// ターン
+enum turn {
+    Player1,
+    Player2,
+    Player,
+    CPU
+};
+
 void init(void);
 void update(void);
 
@@ -75,7 +83,7 @@ extern GLuint win_images[4];
 extern struct vector mouse;
 extern enum scene scene;
 extern enum status status;
-extern int turn;
+extern enum turn turn;
 extern int turn_left;
 extern int win_left;
 extern int break_shot;
