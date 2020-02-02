@@ -7,17 +7,9 @@
 #include "ball.h"
 #include "vector.h"
 
-#define BALL_NUM    10  // ボールの数
+#define BALL_NUM    10  // 球の数
 #define TURN_TIME   120 // ターン表示の時間
 #define RESULT_TIME 240 // リザルト表示の時間
-
-// テーブル
-struct table {
-    struct vector size; // 大きさ
-    double pocket_r;    // ポケットの半径
-    double wall_loss;   // 壁衝突時の速度損失
-    GLuint image;       // 画像
-};
 
 // キュー
 struct cue {
@@ -37,9 +29,9 @@ enum scene {
 enum status {
     Stop,  // 静止中
     Pull,  // キューを引いてる
-    Put,   // 手玉を配置
-    Move,  // 動いている
-    Result // 結果
+    Put,   // 手玉を配置中
+    Move,  // 移動中
+    Result // 勝者表示
 };
 
 // ターン
@@ -53,12 +45,8 @@ enum turn {
 void init(void);
 void update(void);
 
-void reflectTable(struct table, struct ball *);
-int pocketTouching(struct table, struct ball);
-void pocketIn(struct table, struct ball *);
 int ballMoving(void);
 int canPut(void);
-
 struct vector convertPoint(int, int);
 
 void Display(void);

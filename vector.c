@@ -4,6 +4,7 @@
 
 #include "vector.h"
 
+// ゼロベクトル
 const struct vector ZERO = {0, 0};
 
 // ベクトルを生成
@@ -70,9 +71,4 @@ double inner(struct vector a, struct vector b) {
 // ゼロベクトルか
 int isZero(struct vector a) {
     return mag(a) <= DBL_EPSILON;
-}
-
-// ベクトルの内容を表示
-void printVector(struct vector a) {
-    printf("(%f, %f)\n", a.x, a.y);
 }

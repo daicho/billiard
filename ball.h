@@ -7,9 +7,9 @@
 #include "vector.h"
 
 #define FRICTION  0.0002 // 摩擦
-#define BALL_LOSS 0.95   // ボール衝突時の速度損失
+#define BALL_LOSS 0.95   // 球衝突時の速度損失
 
-// ボール
+// 球
 struct ball {
     int exist;         // 存在しているか
     int num;           // 番号 (0:白玉)

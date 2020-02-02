@@ -13,7 +13,6 @@ struct vector add(struct vector, struct vector);
 struct vector sub(struct vector, struct vector);
 struct vector mult(struct vector, double);
 struct vector divi(struct vector, double);
-
 struct vector rotate(struct vector, double);
 struct vector normal(struct vector);
 
@@ -23,8 +22,6 @@ double angle2(struct vector, struct vector);
 double dist(struct vector, struct vector);
 double inner(struct vector, struct vector);
 int isZero(struct vector);
-
-void printVector(struct vector);
 
 extern const struct vector ZERO;
 

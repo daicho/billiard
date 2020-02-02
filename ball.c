@@ -36,6 +36,7 @@ void moveBall(struct ball *ball) {
 
 // ボールを描画
 void drawBall(struct ball ball) {
+    // 球体の設定
     GLUquadricObj* sphere = gluNewQuadric();
     gluQuadricDrawStyle(sphere, GLU_FILL);
     gluQuadricNormals(sphere, GLU_SMOOTH);
@@ -84,11 +85,9 @@ void reflectBall(struct ball *ballA, struct ball *ballB, int break_shot) {
             ballB->p = sub(ballB->p, temp);
         }
 
-        // 2つのボールの相対位置と相対速度
+        // 衝突後の速度を決定
         p_ab = sub(ballA->p, ballB->p);
         v_ab = sub(ballA->v, ballB->v);
-
-        // 衝突後の速度を決定
         temp = mult(normal(p_ab), -inner(normal(p_ab), v_ab));
         ballA->v = mult(add(ballA->v, temp), BALL_LOSS);
         ballB->v = mult(sub(ballB->v, temp), BALL_LOSS);

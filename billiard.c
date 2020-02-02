@@ -7,13 +7,14 @@
 #include <GL/glpng.h>
 
 #include "billiard.h"
+#include "table.h"
 #include "ball.h"
 #include "vector.h"
 #include "shape.h"
 
 #define FPS    60    // フレームレート
 #define ASPECT 2.0   // アスペクト比 (幅/高さ)
-#define BALL_R 0.04  // ボールの半径
+#define BALL_R 0.04  // 球の半径
 #define CUE_W  1.536 // キューの幅
 #define CUE_H  0.048 // キューの高さ
 
@@ -22,29 +23,29 @@
 #define degree(rad) (rad * 180.0 / M_PI)
 
 // オブジェクト
-struct ball prev_balls[BALL_NUM];
-struct ball balls[BALL_NUM];
-struct table table = {{1.75, 0.875}, 0.0896, 0.8};
-struct cue cue;
+struct ball prev_balls[BALL_NUM];                  // 前回の球
+struct ball balls[BALL_NUM];                       // 球
+struct table table = {{1.75, 0.875}, 0.0896, 0.8}; // 台
+struct cue cue;                                    // キュー
 
 // 画像
-GLuint title_image;
-GLuint vshuman_images[2];
-GLuint vscpu_images[2];
-GLuint invalid_image;
-GLuint highlight_image;
-GLuint turn_images[4];
-GLuint win_images[4];
+GLuint title_image;       // タイトル
+GLuint vshuman_images[2]; // 人vs人のボタン
+GLuint vscpu_images[2];   // 人vsCPUのボタン
+GLuint invalid_image;     // 無効マーク
+GLuint highlight_image;   // ハイライト
+GLuint turn_images[4];    // ターン表示
+GLuint win_images[4];     // 勝者表示
 
-struct vector mouse = {ASPECT, 1};
-enum scene scene = Title;
-enum status status = Stop;
-enum turn turn;
-int turn_left;
-int win_left;
-int break_shot;
-int next;
-int first_touch;
+struct vector mouse = {ASPECT, 1}; // マウス座標
+enum scene scene = Title;          // シーン
+enum status status;                // 状態
+enum turn turn;                    // ターン
+int turn_left;                     // ターン表示の残り時間
+int win_left;                      // 勝者表示の残り時間
+int break_shot;                    // ブレイクショットか
+int next;                          // 次に狙う球
+int first_touch;                   // 最初に当たった球
 
 int main(int argc, char *argv[]) {
     int i;
@@ -54,7 +55,7 @@ int main(int argc, char *argv[]) {
 
     // 初期化
     glutInit(&argc, argv);
-    glutInitWindowSize(720, 360);
+    glutInitWindowSize(960, 480);
     glutCreateWindow("REAL BILLIARD");
     glutInitDisplayMode(GLUT_RGBA);
     glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -118,9 +119,9 @@ int main(int argc, char *argv[]) {
 // 初期化
 void init(void) {
     struct vector p1 = {table.size.x / 2, 0}; // 1番玉の位置
-    double r = BALL_R + 0.0001; // ボールの間隔
+    double r = BALL_R + 0.0001;               // 球の間隔
 
-    // ボールを配置
+    // 球を配置
     initBall(&balls[0], 0, vector(-table.size.x / 2, 0), BALL_R);
     initBall(&balls[1], 1, vector(p1.x, p1.y), BALL_R);
     initBall(&balls[2], 2, vector(p1.x + r * 2 * sqrt(3), p1.y - r * 2), BALL_R);
@@ -142,9 +143,7 @@ void init(void) {
 void update(void) {
     int i, j;
 
-    if (scene == Title)
-        return;
-
+    // 表示タイマーを更新
     if (status == Result) {
         if (win_left > 0)
             win_left--;
@@ -156,6 +155,7 @@ void update(void) {
     }
 
     switch (status) {
+        // 静止中
         case Stop: {
             if (turn == CPU) {
                 int target = 0;
@@ -171,6 +171,7 @@ void update(void) {
                     {table.size.x, -table.size.y}
                 };
 
+                // 一番入れやすいポケットを狙う
                 for (i = 0; i < 6; i++) {
                     double angle = cos(angle2(sub(pockets[i], balls[next].p), sub(balls[0].p, balls[next].p)));
 
@@ -180,10 +181,50 @@ void update(void) {
                     }
                 }
 
-                status = Pull;
                 cue.angle = angle(sub(add(balls[next].p, mult(normal(sub(balls[next].p, pockets[target])), balls[0].r + balls[next].r)), balls[0].p)) + ((double)rand() / RAND_MAX - 0.5) * 0.01;
+                status = Pull;
             } else {
+                // キューをマウスの方向に向ける
                 cue.angle = angle(sub(mouse, balls[0].p));
+            }
+
+            break;
+        }
+
+        // 手玉を配置中
+        case Put: {
+            if (turn == CPU) {
+                // 置ける場所にランダムに配置
+                do {
+                    balls[0].p = vector((2.0 * rand() / RAND_MAX - 1) * table.size.x, (2.0 * rand() / RAND_MAX - 1) * table.size.y);
+                } while (!canPut());
+
+                cue.p = balls[0].p;
+                status = Stop;
+            } else {
+                balls[0].p = mouse;
+            }
+
+            break;
+        }
+
+        // キューを引いている
+        case Pull: {
+            // 力を溜める
+            cue.power += 0.001;
+            if (cue.power > 0.12)
+                cue.power = 0.12;
+
+            if (turn == CPU && cue.power >= 0.08) {
+                // 状態を保持
+                for (i = 0; i < BALL_NUM; i++)
+                    prev_balls[i] = balls[i];
+
+                // 手玉に初速度を与える
+                balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
+                cue.power = 0;
+                first_touch = 0;
+                status = Move;
             }
 
             break;
@@ -196,7 +237,7 @@ void update(void) {
                     moveBall(&balls[i]);
             }
 
-            // 最初に触れたボール
+            // 最初に触れた球
             if (!first_touch) {
                 for (i = 1; i < BALL_NUM; i++) {
                     if (balls[i].exist && ballColliding(balls[0], balls[i])) {
@@ -206,34 +247,36 @@ void update(void) {
                 }
             }
 
+            // 球の反射
             for (i = 0; i < BALL_NUM; i++) {
                 if (!balls[i].exist) continue;
 
-                // ボール同士の反射
+                // 球同士の反射
                 for (j = i + 1; j < BALL_NUM; j++) {
                     if (balls[j].exist)
                         reflectBall(&balls[i], &balls[j], break_shot);
                 }
 
-                // テーブルとの反射
+                // 台との反射
                 reflectTable(table, &balls[i]);
             }
 
-            // ポケット判定
+            // ポケットイン
             for (i = 0; i < BALL_NUM; i++) {
                 if (balls[i].exist)
                     pocketIn(table, &balls[i]);
             }
 
+            // 球が止まったら
             if (!ballMoving()) {
-                // ファウルしたか
+                // ファウルしていなかったら
                 if (balls[0].exist && first_touch == next) {
-                    // 9番ボールが入ったか
+                    // 9番球が入っていなかったら
                     if (balls[9].exist) {
                         int pocket = 0;
                         status = Stop;
 
-                        // ボールが落ちていたら続行
+                        // いずれかの球が落ちていたら続行
                         for (i = 0; i < BALL_NUM; i++) {
                             if (prev_balls[i].exist && !balls[i].exist) {
                                 pocket = 1;
@@ -241,6 +284,7 @@ void update(void) {
                             }
                         }
 
+                        // 球が落ちていなかったらターンチェンジ
                         if (!pocket) {
                             turn ^= 1;
                             turn_left = TURN_TIME;
@@ -250,15 +294,17 @@ void update(void) {
                         cue.p = balls[0].p;
                         cue.angle = angle(sub(mouse, balls[0].p));
                     } else {
+                        // 9番球が入ったら勝者表示
                         status = Result;
                         win_left = RESULT_TIME;
                     }
                 } else {
+                    // ファウルだったらターンチェンジして手玉の自由配置
                     status = Put;
                     turn ^= 1;
                     turn_left = TURN_TIME;
 
-                    // ボールの状態を復元
+                    // 球の状態を復元
                     for (i = 0; i < BALL_NUM; i++)
                         balls[i] = prev_balls[i];
 
@@ -266,7 +312,7 @@ void update(void) {
                     balls[0].angle = 0;
                 }
 
-                // 次に落とすべきボール
+                // 次に落とすべき球
                 next = 0;
                 for (i = 1; i < BALL_NUM; i++) {
                     if (balls[i].exist && (balls[i].num < next || next == 0))
@@ -277,109 +323,12 @@ void update(void) {
             break;
         }
 
-        case Pull: {
-            cue.power += 0.001;
-            if (cue.power > 0.12)
-                cue.power = 0.12;
-
-            if (turn == CPU && cue.power >= 0.08) {
-                status = Move;
-
-                // 状態を保持
-                for (i = 0; i < BALL_NUM; i++)
-                    prev_balls[i] = balls[i];
-
-                balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
-                cue.power = 0;
-                first_touch = 0;
-            }
-
-            break;
-        }
-
-        case Put: {
-            balls[0].p = mouse;
-
-            if (turn == CPU) {
-                status = Stop;
-
-                do {
-                    balls[0].p = vector((2.0 * rand() / RAND_MAX - 1) * table.size.x, (2.0 * rand() / RAND_MAX - 1) * table.size.y);
-                } while (!canPut());
-
-                cue.p = balls[0].p;
-            }
-
-            break;
-        }
-
         default:
             break;
     }
 }
 
-// テーブルとの反射
-void reflectTable(struct table table, struct ball *ball) {
-    if (ball->p.x > table.size.x - ball->r) {
-        ball->p.x = table.size.x - ball->r;
-        ball->p.y = ball->p.y - tan(angle(ball->v)) * (ball->p.x - table.size.x + ball->r);
-        ball->v.x *= -1;
-        ball->v = mult(ball->v, table.wall_loss);
-    }
-
-    if (ball->p.x < -table.size.x + ball->r) {
-        ball->p.x = -table.size.x + ball->r;
-        ball->p.y = ball->p.y - tan(angle(ball->v)) * (ball->p.x + table.size.x - ball->r);
-        ball->v.x *= -1;
-        ball->v = mult(ball->v, table.wall_loss);
-    }
-
-    if (ball->p.y > table.size.y - balls->r) {
-        ball->p.x = ball->p.x - (ball->p.y - table.size.y + ball->r) / tan(angle(ball->v));
-        ball->p.y = table.size.y - balls->r;
-        ball->v.y *= -1;
-        ball->v = mult(ball->v, table.wall_loss);
-    }
-
-    if (ball->p.y < -table.size.y + balls->r) {
-        ball->p.x = ball->p.x - (ball->p.y + table.size.y - ball->r) / tan(angle(ball->v));
-        ball->p.y = -table.size.y + balls->r;
-        ball->v.y *= -1;
-        ball->v = mult(ball->v, table.wall_loss);
-    }
-}
-
-// ポケットに入るか
-int pocketTouching(struct table table, struct ball ball) {
-    int i;
-
-    // ポケットの座標
-    struct vector pockets[6] = {
-        {-table.size.x, table.size.y},
-        {0, table.size.y},
-        {table.size.x, table.size.y},
-        {-table.size.x, -table.size.y},
-        {0, -table.size.y},
-        {table.size.x, -table.size.y}
-    };
-
-    for (i = 0; i < 6; i++) {
-        if (dist(ball.p, pockets[i]) < table.pocket_r)
-            return 1;
-    }
-
-    return 0;
-}
-
-// ポケットに入れる
-void pocketIn(struct table table, struct ball *ball) {
-    if (pocketTouching(table, *ball)) {
-        ball->exist = 0;
-        ball->v = ZERO;
-    }
-}
-
-// ボールが動いているか
+// 球が動いているか
 int ballMoving(void) {
     int i;
 
@@ -391,7 +340,7 @@ int ballMoving(void) {
     return 0;
 }
 
-// ボールを置けるか
+// 球を置けるか
 int canPut(void) {
     int i;
 
@@ -409,9 +358,8 @@ int canPut(void) {
     return 1;
 }
 
-// 描画時の座標に変換
+// ピクセル座標を描画時の座標に変換
 struct vector convertPoint(int x, int y) {
-    struct vector point;
     int w = glutGet(GLUT_WINDOW_WIDTH);
     int h = glutGet(GLUT_WINDOW_HEIGHT);
 
@@ -420,11 +368,9 @@ struct vector convertPoint(int x, int y) {
 
     // 座標を変換
     if (ratio > ASPECT)
-        point = vector(((double)x / w - 0.5) * 2 * ratio, ((double)y / h - 0.5) * -2);
+        return vector(((double)x / w - 0.5) * 2 * ratio, ((double)y / h - 0.5) * -2);
     else
-        point = vector(((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
-
-    return point;
+        return vector(((double)x / w - 0.5) * 2 * ASPECT, ((double)y / h - 0.5) * 2 * ASPECT / -ratio);
 }
 
 // 画面描画
@@ -434,6 +380,7 @@ void Display(void) {
     double predict_min;
     struct vector predict_pos;
 
+    // 光源の座標
     GLfloat lightPos[2][4] = {
         {-1.0, 0.0, 10.0, 1.0},
         {1.0, 0.0, 10.0, 1.0}
@@ -459,7 +406,7 @@ void Display(void) {
         glLightfv(GL_LIGHT0, GL_POSITION, lightPos[0]);
         glLightfv(GL_LIGHT1, GL_POSITION, lightPos[1]);
 
-        // テーブル
+        // 台
         putSprite(table.image, 0, 0, ASPECT * 2, 2, 1);
 
         // ハイライト
@@ -474,7 +421,7 @@ void Display(void) {
 
         // 予想線
         if (status == Stop || status == Pull) {
-            // テーブルとの接触
+            // 台との接触
             if (sin(cue.angle) > 0)
                 predict_pos = vector(balls[0].p.x - (balls[0].p.y - table.size.y + balls[0].r) / tan(cue.angle), table.size.y - balls[0].r);
             else
@@ -491,7 +438,7 @@ void Display(void) {
             if (fabs(predict_pos.y) < table.size.y - balls[0].r)
                 predict_min = dist(balls[0].p, predict_pos);
 
-            // ボールとの接触
+            // 球との接触
             for (i = 1; i < BALL_NUM; i++) {
                 double touch;
                 double predict_dist;
@@ -528,7 +475,7 @@ void Display(void) {
             glEnable(GL_LIGHTING);
         }
 
-        // ボール
+        // 球
         for (i = BALL_NUM - 1; i >= 0; i--) {
             if (balls[i].exist)
                 drawBall(balls[i]);
@@ -585,7 +532,10 @@ void Reshape(int w, int h) {
 void Timer(int value) {
     // 次のタイマーを登録
     glutTimerFunc(1000.0 / FPS + 0.5, Timer, 0);
-    update();
+
+    if (scene == Game)
+        update();
+
     glutPostRedisplay();
 }
 
@@ -598,16 +548,19 @@ void Mouse(int button, int stat, int x, int y) {
     if (button == GLUT_LEFT_BUTTON) {
         if (scene == Title) {
             if (stat == GLUT_UP) {
+                // 人vs人ボタンクリック
                 if (fabs(mouse.x) <= ASPECT / 2 && -0.25 <= mouse.y && mouse.y <= 0.25) {
                     scene = Game;
                     turn = Player1;
                 }
 
+                // 人vsCPUボタンクリック
                 if (fabs(mouse.x) <= ASPECT / 2 && -0.875 <= mouse.y && mouse.y <= -0.375) {
                     scene = Game;
                     turn = Player;
                 }
 
+                // 初期化
                 if (scene == Game) {
                     status = Stop;
                     break_shot = 1;
@@ -617,10 +570,12 @@ void Mouse(int button, int stat, int x, int y) {
                 }
             }
         } else {
+            // CPU操作時はクリック無効
             if (turn == CPU)
                 return;
 
             switch (status) {
+                // 静止中
                 case Stop: {
                     if (stat == GLUT_DOWN) {
                         status = Pull;
@@ -630,6 +585,7 @@ void Mouse(int button, int stat, int x, int y) {
                     break;
                 }
 
+                // キューを引いている
                 case Pull: {
                     if (stat == GLUT_UP) {
                         status = Move;
@@ -638,6 +594,7 @@ void Mouse(int button, int stat, int x, int y) {
                         for (i = 0; i < BALL_NUM; i++)
                             prev_balls[i] = balls[i];
 
+                        // 手玉に初速度を与える
                         balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
                         cue.power = 0;
                         first_touch = 0;
@@ -646,6 +603,7 @@ void Mouse(int button, int stat, int x, int y) {
                     break;
                 }
 
+                // 手玉配置中
                 case Put: {
                     if (stat == GLUT_DOWN && canPut()) {
                         status = Stop;
