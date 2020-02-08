@@ -171,7 +171,7 @@ void update(void) {
     switch (status) {
         // 静止中
         case Stop: {
-            if ((turn == CPU || 1)) {
+            if (turn == CPU) {
                 int target = 0;
                 double angle_min = 1;
                 struct vector temp;
@@ -220,7 +220,7 @@ void update(void) {
 
         // 手球を配置中
         case Put: {
-            if ((turn == CPU || 1)) {
+            if (turn == CPU) {
                 // 置ける場所にランダムに配置
                 do {
                     double angle = 2 * M_PI * rand() / RAND_MAX;
@@ -243,7 +243,7 @@ void update(void) {
             if (cue.power > 0.12)
                 cue.power = 0.12;
 
-            if ((turn == CPU || 1) && cue.power >= cpu_power) {
+            if (turn == CPU && cue.power >= cpu_power) {
                 // 音声再生
                 mciSendString("play shot from 0", NULL, 0, NULL);
 
@@ -602,7 +602,7 @@ void Mouse(int button, int stat, int x, int y) {
             }
         } else {
             // CPU操作時はクリック無効
-            if ((turn == CPU || 1))
+            if (turn == CPU)
                 return;
 
             switch (status) {
