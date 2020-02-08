@@ -76,5 +76,6 @@ extern int win_left;
 extern int break_shot;
 extern int next;
 extern int first_touch;
+extern double cpu_power;
 
 #endif

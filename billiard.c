@@ -49,6 +49,7 @@ int win_left;                      // 勝者表示の残り時間
 int break_shot;                    // ブレイクショットか
 int next;                          // 次に狙う球
 int first_touch;                   // 最初に当たった球
+double cpu_power;                  // CPUが球を弾く強さ
 
 int main(int argc, char *argv[]) {
     int i;
@@ -197,6 +198,12 @@ void update(void) {
 
                 temp = sub(add(balls[next].p, mult(normal(sub(balls[next].p, pockets[target])), balls[0].r + balls[next].r)), balls[0].p);
                 cue.angle = angle(temp) + ((double)rand() / RAND_MAX - 0.5) * 0.005 / mag(temp);
+
+                // 球を弾く強さを決定
+                cpu_power = pow(dist(balls[0].p, balls[next].p) + dist(balls[next].p, pockets[target]), 0.5) * 0.04;
+                if (cpu_power > 0.12)
+                    cpu_power = 0.12;
+
                 status = Pull;
             } else {
                 // キューをマウスの方向に向ける
@@ -230,7 +237,7 @@ void update(void) {
             if (cue.power > 0.12)
                 cue.power = 0.12;
 
-            if (turn == CPU && cue.power >= 0.08) {
+            if (turn == CPU && cue.power >= cpu_power) {
                 // 音声再生
                 mciSendString("play shot from 0", NULL, 0, NULL);
 
