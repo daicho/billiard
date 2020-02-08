@@ -1,4 +1,5 @@
 #include <math.h>
+#include <windows.h>
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
@@ -63,9 +64,17 @@ int ballColliding(struct ball ballA, struct ball ballB) {
 
 // ボール同士の反射
 void reflectBall(struct ball *ballA, struct ball *ballB, int break_shot) {
+    char sendString[64];
+    struct vector p_ab, v_ab, temp;
+    double a, b, c, D, t;
+
     if (ballColliding(*ballA, *ballB)) {
-        struct vector p_ab, v_ab, temp;
-        double a, b, c, D, t;
+        // 音声再生
+        if (!break_shot || ballA->num == 0) {
+            sprintf(sendString, "setaudio collide volume to %d", (int)((pow(mag(sub(ballA->v, ballB->v)) / 0.1 - 1, 3) + 1) * 1000));
+            mciSendString(sendString, NULL, 0, NULL);
+            mciSendString("play collide from 0", NULL, 0, NULL);
+        }
 
         // ボールの重なりを修正
         p_ab = sub(ballA->p, ballB->p);

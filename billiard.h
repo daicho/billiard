@@ -8,8 +8,6 @@
 #include "vector.h"
 
 #define BALL_NUM    10  // 球の数
-#define TURN_TIME   120 // ターン表示の時間
-#define RESULT_TIME 240 // リザルト表示の時間
 
 // キュー
 struct cue {
@@ -54,6 +52,7 @@ void Reshape(int, int);
 void Timer(int);
 void Mouse(int, int, int, int);
 void PassiveMotion(int, int);
+void Keyboard(unsigned char, int, int);
 
 extern struct ball prev_balls[BALL_NUM];
 extern struct ball balls[BALL_NUM];

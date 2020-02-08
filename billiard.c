@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <windows.h>
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
@@ -12,11 +13,13 @@
 #include "vector.h"
 #include "shape.h"
 
-#define FPS    60    // フレームレート
-#define ASPECT 2.0   // アスペクト比 (幅/高さ)
-#define BALL_R 0.04  // 球の半径
-#define CUE_W  1.536 // キューの幅
-#define CUE_H  0.048 // キューの高さ
+#define FPS         60    // フレームレート
+#define ASPECT      2.0   // アスペクト比 (幅/高さ)
+#define BALL_R      0.04  // 球の半径
+#define CUE_W       1.536 // キューの幅
+#define CUE_H       0.048 // キューの高さ
+#define TURN_TIME   120   // ターン表示の時間
+#define RESULT_TIME 240   // リザルト表示の時間
 
 // 角度を変換
 #define radian(deg) (rad * M_PI / 180.0)
@@ -55,10 +58,15 @@ int main(int argc, char *argv[]) {
 
     // 初期化
     glutInit(&argc, argv);
-    glutInitWindowSize(960, 480);
-    glutCreateWindow("REAL BILLIARD");
     glutInitDisplayMode(GLUT_RGBA);
     glClearColor(1.0, 1.0, 1.0, 1.0);
+
+#ifdef FULL_SCREEN
+    glutEnterGameMode();
+#else
+    glutInitWindowSize(960, 480);
+    glutCreateWindow("REAL BILLIARD");
+#endif
 
     // 混合処理を有効化
     glEnable(GL_BLEND);
@@ -80,6 +88,7 @@ int main(int argc, char *argv[]) {
     glutTimerFunc(1000.0 / FPS + 0.5, Timer, 0);
     glutMouseFunc(Mouse);
     glutPassiveMotionFunc(PassiveMotion);
+    glutKeyboardFunc(Keyboard);
 
     // 画像読み込み
     title_image = pngBind("images/title.png", PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
@@ -109,6 +118,11 @@ int main(int argc, char *argv[]) {
         sprintf(fileName, "images/win_%d.png", i);
         win_images[i] = pngBind(fileName, PNG_NOMIPMAP, PNG_ALPHA, NULL, GL_CLAMP, GL_NEAREST, GL_NEAREST);
     }
+
+    // 音声ファイル読み込み
+    mciSendString("open shot.mp3 alias shot", NULL, 0, NULL);
+    mciSendString("open collide.mp3 alias collide", NULL, 0, NULL);
+    mciSendString("open pocket.mp3 alias pocket", NULL, 0, NULL);
 
     // メインループ開始
     glutMainLoop();
@@ -159,7 +173,8 @@ void update(void) {
         case Stop: {
             if (turn == CPU) {
                 int target = 0;
-                double angle_min = 0;
+                double angle_min = 1;
+                struct vector temp;
 
                 // ポケットの座標
                 struct vector pockets[6] = {
@@ -181,7 +196,8 @@ void update(void) {
                     }
                 }
 
-                cue.angle = angle(sub(add(balls[next].p, mult(normal(sub(balls[next].p, pockets[target])), balls[0].r + balls[next].r)), balls[0].p)) + ((double)rand() / RAND_MAX - 0.5) * 0.01;
+                temp = sub(add(balls[next].p, mult(normal(sub(balls[next].p, pockets[target])), balls[0].r + balls[next].r)), balls[0].p);
+                cue.angle = angle(temp) + ((double)rand() / RAND_MAX - 0.5) * 0.005 / mag(temp);
                 status = Pull;
             } else {
                 // キューをマウスの方向に向ける
@@ -216,6 +232,9 @@ void update(void) {
                 cue.power = 0.12;
 
             if (turn == CPU && cue.power >= 0.08) {
+                // 音声再生
+                mciSendString("play shot from 0", NULL, 0, NULL);
+
                 // 状態を保持
                 for (i = 0; i < BALL_NUM; i++)
                     prev_balls[i] = balls[i];
@@ -588,7 +607,8 @@ void Mouse(int button, int stat, int x, int y) {
                 // キューを引いている
                 case Pull: {
                     if (stat == GLUT_UP) {
-                        status = Move;
+                        // 音声再生
+                        mciSendString("play shot from 0", NULL, 0, NULL);
 
                         // 状態を保持
                         for (i = 0; i < BALL_NUM; i++)
@@ -598,6 +618,7 @@ void Mouse(int button, int stat, int x, int y) {
                         balls[0].v = mult(vector(cos(cue.angle), sin(cue.angle)), cue.power);
                         cue.power = 0;
                         first_touch = 0;
+                        status = Move;
                     }
 
                     break;
@@ -623,4 +644,19 @@ void Mouse(int button, int stat, int x, int y) {
 // マウス移動
 void PassiveMotion(int x, int y) {
     mouse = convertPoint(x, y);
+}
+
+// キーボード押下
+void Keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+        case 'q': {
+            exit(0);
+            break;
+        }
+
+        case 'r': {
+            scene = Title;
+            break;
+        }
+    }
 }

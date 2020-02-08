@@ -1,4 +1,5 @@
 #include <math.h>
+#include <windows.h>
 
 #include "table.h"
 #include "ball.h"
@@ -64,6 +65,9 @@ int pocketTouching(struct table table, struct ball ball) {
 // ポケットに入れる
 void pocketIn(struct table table, struct ball *ball) {
     if (pocketTouching(table, *ball)) {
+        // 音声再生
+        mciSendString("play pocket from 0", NULL, 0, NULL);
+
         ball->exist = 0;
         ball->v = ZERO;
     }
