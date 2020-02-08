@@ -171,7 +171,7 @@ void update(void) {
     switch (status) {
         // 静止中
         case Stop: {
-            if (turn == CPU) {
+            if ((turn == CPU || 1)) {
                 int target = 0;
                 double angle_min = 1;
                 struct vector temp;
@@ -186,23 +186,28 @@ void update(void) {
                     {table.size.x, -table.size.y}
                 };
 
-                // 一番入れやすいポケットを狙う
-                for (i = 0; i < 6; i++) {
-                    double angle = cos(angle2(sub(pockets[i], balls[next].p), sub(balls[0].p, balls[next].p)));
-
-                    if (angle < angle_min) {
-                        angle_min = angle;
-                        target = i;
-                    }
-                }
-
-                temp = sub(add(balls[next].p, mult(normal(sub(balls[next].p, pockets[target])), balls[0].r + balls[next].r)), balls[0].p);
-                cue.angle = angle(temp) + ((double)rand() / RAND_MAX - 0.5) * 0.005 / mag(temp);
-
-                // 球を弾く強さを決定
-                cpu_power = pow(dist(balls[0].p, balls[next].p) + dist(balls[next].p, pockets[target]), 0.5) * 0.04;
-                if (cpu_power > 0.12)
+                if (break_shot) {
+                    cue.angle = angle(sub(balls[next].p, balls[0].p)) + ((double)rand() / RAND_MAX - 0.5) * 0.01;
                     cpu_power = 0.12;
+                } else {
+                    // 一番入れやすいポケットを狙う
+                    for (i = 0; i < 6; i++) {
+                        double angle = cos(angle2(sub(pockets[i], balls[next].p), sub(balls[0].p, balls[next].p)));
+
+                        if (angle < angle_min) {
+                            angle_min = angle;
+                            target = i;
+                        }
+                    }
+
+                    temp = sub(add(balls[next].p, mult(normal(sub(balls[next].p, pockets[target])), balls[0].r + balls[next].r)), balls[0].p);
+                    cue.angle = angle(temp) + ((double)rand() / RAND_MAX - 0.5) * 0.005 / mag(temp);
+
+                    // 球を弾く強さを決定
+                    cpu_power = pow(dist(balls[0].p, balls[next].p) + dist(balls[next].p, pockets[target]), 0.5) * 0.04;
+                    if (cpu_power > 0.12)
+                        cpu_power = 0.12;
+                }
 
                 status = Pull;
             } else {
@@ -215,10 +220,11 @@ void update(void) {
 
         // 手球を配置中
         case Put: {
-            if (turn == CPU) {
+            if ((turn == CPU || 1)) {
                 // 置ける場所にランダムに配置
                 do {
-                    balls[0].p = vector((2.0 * rand() / RAND_MAX - 1) * table.size.x, (2.0 * rand() / RAND_MAX - 1) * table.size.y);
+                    double angle = 2 * M_PI * rand() / RAND_MAX;
+                    balls[0].p = add(balls[next].p, mult(vector(cos(angle), sin(angle)), 0.3 * rand() / RAND_MAX + 0.2));
                 } while (!canPut());
 
                 cue.p = balls[0].p;
@@ -237,7 +243,7 @@ void update(void) {
             if (cue.power > 0.12)
                 cue.power = 0.12;
 
-            if (turn == CPU && cue.power >= cpu_power) {
+            if ((turn == CPU || 1) && cue.power >= cpu_power) {
                 // 音声再生
                 mciSendString("play shot from 0", NULL, 0, NULL);
 
@@ -596,7 +602,7 @@ void Mouse(int button, int stat, int x, int y) {
             }
         } else {
             // CPU操作時はクリック無効
-            if (turn == CPU)
+            if ((turn == CPU || 1))
                 return;
 
             switch (status) {
