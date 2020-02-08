@@ -420,7 +420,6 @@ void Display(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (scene == Title) {
-        int button = 0;
         int vshuman = fabs(mouse.x) <= ASPECT / 2 && -0.25 <= mouse.y && mouse.y <= 0.25;
         int vscpu = fabs(mouse.x) <= ASPECT / 2 && -0.875 <= mouse.y && mouse.y <= -0.375;
 
@@ -430,12 +429,6 @@ void Display(void) {
         putSprite(vshuman_images[vshuman], 0, 0, ASPECT, 0.5, 1);
         putSprite(vscpu_images[vscpu], 0, -0.625, ASPECT, 0.5, 1);
 
-        // マウスカーソルを変更
-        if (vshuman || vscpu)
-            SetCursor(LoadCursor(NULL, IDC_HAND));
-        else
-            SetCursor(LoadCursor(NULL, IDC_ARROW));
-        
     } else {
         // 光源を設定
         glLightfv(GL_LIGHT0, GL_POSITION, lightPos[0]);
@@ -582,6 +575,15 @@ void Mouse(int button, int stat, int x, int y) {
 
     if (button == GLUT_LEFT_BUTTON) {
         if (scene == Title) {
+            int vshuman = fabs(mouse.x) <= ASPECT / 2 && -0.25 <= mouse.y && mouse.y <= 0.25;
+            int vscpu = fabs(mouse.x) <= ASPECT / 2 && -0.875 <= mouse.y && mouse.y <= -0.375;
+
+            // マウスカーソルを変更
+            if (scene == Title && (vshuman || vscpu))
+                SetCursor(LoadCursor(0, IDC_HAND));
+            else
+                SetCursor(LoadCursor(0, IDC_ARROW));
+
             if (stat == GLUT_UP) {
                 // 人vs人ボタンクリック
                 if (fabs(mouse.x) <= ASPECT / 2 && -0.25 <= mouse.y && mouse.y <= 0.25) {
@@ -660,6 +662,14 @@ void Mouse(int button, int stat, int x, int y) {
 // マウス移動
 void PassiveMotion(int x, int y) {
     mouse = convertPoint(x, y);
+    int vshuman = fabs(mouse.x) <= ASPECT / 2 && -0.25 <= mouse.y && mouse.y <= 0.25;
+    int vscpu = fabs(mouse.x) <= ASPECT / 2 && -0.875 <= mouse.y && mouse.y <= -0.375;
+
+    // マウスカーソルを変更
+    if (scene == Title && (vshuman || vscpu))
+        SetCursor(LoadCursor(0, IDC_HAND));
+    else
+        SetCursor(LoadCursor(0, IDC_ARROW));
 }
 
 // キーボード押下
