@@ -59,7 +59,6 @@ int main(int argc, char *argv[]) {
     // 初期化
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA);
-    glClearColor(1.0, 1.0, 1.0, 1.0);
 
 #ifdef FULL_SCREEN
     glutEnterGameMode();
