@@ -420,18 +420,22 @@ void Display(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (scene == Title) {
+        int button = 0;
+        int vshuman = fabs(mouse.x) <= ASPECT / 2 && -0.25 <= mouse.y && mouse.y <= 0.25;
+        int vscpu = fabs(mouse.x) <= ASPECT / 2 && -0.875 <= mouse.y && mouse.y <= -0.375;
+
         // タイトル画面
         putSprite(title_image, 0, 0, ASPECT * 2, 2, 1);
 
-        if (fabs(mouse.x) <= ASPECT / 2 && -0.25 <= mouse.y && mouse.y <= 0.25)
-            putSprite(vshuman_images[1], 0, 0, ASPECT, 0.5, 1);
-        else
-            putSprite(vshuman_images[0], 0, 0, ASPECT, 0.5, 1);
+        putSprite(vshuman_images[vshuman], 0, 0, ASPECT, 0.5, 1);
+        putSprite(vscpu_images[vscpu], 0, -0.625, ASPECT, 0.5, 1);
 
-        if (fabs(mouse.x) <= ASPECT / 2 && -0.875 <= mouse.y && mouse.y <= -0.375)
-            putSprite(vscpu_images[1], 0, -0.625, ASPECT, 0.5, 1);
+        // マウスカーソルを変更
+        if (vshuman || vscpu)
+            SetCursor(LoadCursor(NULL, IDC_HAND));
         else
-            putSprite(vscpu_images[0], 0, -0.625, ASPECT, 0.5, 1);
+            SetCursor(LoadCursor(NULL, IDC_ARROW));
+        
     } else {
         // 光源を設定
         glLightfv(GL_LIGHT0, GL_POSITION, lightPos[0]);
