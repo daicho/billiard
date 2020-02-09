@@ -221,11 +221,15 @@ void update(void) {
         // 手球を配置中
         case Put: {
             if (turn == CPU) {
-                // 置ける場所にランダムに配置
-                do {
-                    double angle = 2 * M_PI * rand() / RAND_MAX;
-                    balls[0].p = add(balls[next].p, mult(vector(cos(angle), sin(angle)), 0.3 * rand() / RAND_MAX + 0.2));
-                } while (!canPut());
+                if (break_shot) {
+                    balls[0].p = vector(-table.size.x / 2, 0);
+                } else {
+                    // 置ける場所にランダムに配置
+                    do {
+                        double angle = 2 * M_PI * rand() / RAND_MAX;
+                        balls[0].p = add(balls[next].p, mult(vector(cos(angle), sin(angle)), 0.3 * rand() / RAND_MAX + 0.2));
+                    } while (!canPut());
+                }
 
                 cue.p = balls[0].p;
                 status = Stop;
