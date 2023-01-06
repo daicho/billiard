@@ -1,6 +1,5 @@
 .vscode/
 *.o
-*.exe
 *.aux
 *.log
 *.synctex.gz
